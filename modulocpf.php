@@ -17,6 +17,8 @@ class Modulocpf extends Module
         $this->version = '1.0';
         $this->author = 'Ederson Ferreira';
         $this->need_instance = 0;
+        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_); 
+        $this->module_key = '11d9b64cbd7fbcb0355811e490ffcd04';
         
         parent::__construct();
         
