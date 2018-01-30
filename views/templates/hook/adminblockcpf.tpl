@@ -1,4 +1,4 @@
-{if $arrData}
+{if isset($arrData)}
 <div class="col-lg-12">
     <div class="panel">
         <div class="panel-heading">
