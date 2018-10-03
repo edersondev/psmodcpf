@@ -1,18 +1,18 @@
 <?php
 
 /**
- * Description of modulocpf
+ * Description of psmodcpf
  *
  * @author Ederson Ferreira <ederson.dev@gmail.com>
  */
 
 if (!defined('_PS_VERSION_')) { exit; }
 
-class Modulocpf extends Module
+class Psmodcpf extends Module
 {
     public function __construct()
     {
-        $this->name = 'modulocpf';
+        $this->name = 'psmodcpf';
         $this->tab = 'front_office_features';
         $this->version = '1.0';
         $this->author = 'Ederson Ferreira';
