@@ -221,6 +221,7 @@ class Psmodcpf extends Module
 	 */
 	public function hookHeader()
 	{
+		$this->context->controller->addJS($this->_path.'/views/js/jquery.mask.min.js');
 		$this->context->controller->addJS($this->_path.'/views/js/front.js');
 		$this->context->controller->addCSS($this->_path.'/views/css/front.css');
 	}
@@ -243,5 +244,7 @@ class Psmodcpf extends Module
 	public function hookDisplayCustomerAccountForm()
 	{
 		/* Place your code here. */
+		
+		return $this->display(__FILE__, 'block-document.tpl');
 	}
 }

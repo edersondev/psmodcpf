@@ -25,3 +25,23 @@
 * Don't forget to prefix your containers with your own identifier
 * to avoid any conflicts with others containers.
 */
+
+$(function(){
+	var tipoDocumento = ( $('input[type=radio][name=tp_documento]:checked').val() ? $('input[type=radio][name=tp_documento]:checked').val() : 1 );
+	if(tipoDocumento == 1){
+		$('.cpf_cnpj').mask('000.000.000-00', {reverse: true});
+	} else {
+		$('.cpf_cnpj').mask('00.000.000/0000-00', {reverse: true});
+	}
+
+	$('input[type=radio][name=tp_documento]').on('change', function(){
+		var value = $(this).val();
+		$('.cpf_cnpj').val('');
+		if(value == 1){
+			$('.cpf_cnpj').mask('000.000.000-00', {reverse: true});
+		} else {
+			$('.cpf_cnpj').mask('00.000.000/0000-00', {reverse: true});
+		}
+	});
+
+});
