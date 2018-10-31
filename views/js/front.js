@@ -28,20 +28,21 @@
 
 $(function(){
 	var tipoDocumento = ( $('input[type=radio][name=tp_documento]:checked').val() ? $('input[type=radio][name=tp_documento]:checked').val() : 1 );
+	setMaskInput(tipoDocumento);
+
+	$('input[type=radio][name=tp_documento]').on('change', function(){
+		var value = $(this).val();
+		$('.cpf_cnpj').val('');
+		setMaskInput(value);
+		$('.cpf_cnpj').focus();
+	});
+
+});
+
+function setMaskInput(tipoDocumento){
 	if(tipoDocumento == 1){
 		$('.cpf_cnpj').mask('000.000.000-00', {reverse: true});
 	} else {
 		$('.cpf_cnpj').mask('00.000.000/0000-00', {reverse: true});
 	}
-
-	$('input[type=radio][name=tp_documento]').on('change', function(){
-		var value = $(this).val();
-		$('.cpf_cnpj').val('');
-		if(value == 1){
-			$('.cpf_cnpj').mask('000.000.000-00', {reverse: true});
-		} else {
-			$('.cpf_cnpj').mask('00.000.000/0000-00', {reverse: true});
-		}
-	});
-
-});
+}
