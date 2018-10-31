@@ -26,13 +26,27 @@
 
 $sql = array();
 
-$sql[] = 'CREATE TABLE IF NOT EXISTS `'._DB_PREFIX_.'psmodcpf` (
-    `id_psmodcpf` int(11) NOT NULL AUTO_INCREMENT,
-    PRIMARY KEY  (`id_psmodcpf`)
-) ENGINE='._MYSQL_ENGINE_.' DEFAULT CHARSET=utf8;';
+$db_prefix = _DB_PREFIX_;
+$db_engine = _MYSQL_ENGINE_;
+$sql[] = <<<EOF
+CREATE TABLE IF NOT EXISTS `{$db_prefix}modulo_cpf` (
+	`id` INT NOT NULL AUTO_INCREMENT,
+	`nu_cpf_cnpj` VARCHAR(20) NULL,
+	`rg_ie` VARCHAR(45) NULL,
+	`doc_type` TINYINT NULL,
+	`{$db_prefix}customer_id_customer` INT(10) UNSIGNED NOT NULL,
+	PRIMARY KEY (`id`),
+	INDEX `fk_{$db_prefix}modulo_cpf_{$db_prefix}customer_idx` (`{$db_prefix}customer_id_customer` ASC),
+	CONSTRAINT `fk_{$db_prefix}modulo_cpf_{$db_prefix}customer`
+		FOREIGN KEY (`{$db_prefix}customer_id_customer`)
+		REFERENCES `{$db_prefix}customer` (`id_customer`)
+		ON DELETE CASCADE
+		ON UPDATE NO ACTION)
+ENGINE={$db_engine} DEFAULT CHARSET=utf8;
+EOF;
 
 foreach ($sql as $query) {
-    if (Db::getInstance()->execute($query) == false) {
-        return false;
-    }
+	if (Db::getInstance()->execute($query) == false) {
+		return false;
+	}
 }
