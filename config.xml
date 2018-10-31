@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+	<name>psmodcpf</name>
+	<displayName><![CDATA[Módulo CPF]]></displayName>
+	<version><![CDATA[2.0.0]]></version>
+	<description><![CDATA[Adiciona o campo CPF / CNPJ no cadastro do cliente]]></description>
+	<author><![CDATA[Ederson Ferreira da Silva]]></author>
+	<tab><![CDATA[front_office_features]]></tab>
+	<is_configurable>1</is_configurable>
+	<need_instance>1</need_instance>
+</module>
