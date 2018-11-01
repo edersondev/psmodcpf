@@ -31,18 +31,80 @@ $(function(){
 	setMaskInput(tipoDocumento);
 
 	$('input[type=radio][name=tp_documento]').on('change', function(){
-		var value = $(this).val();
-		$('.cpf_cnpj').val('');
+		var value = $(this).val()
+				elementDoc = $('input[name="documento"]');
+
+		elementDoc.val('');
+		resetStatusField();
+		$('input[name="rg_ie"]').val('');
 		setMaskInput(value);
-		$('.cpf_cnpj').focus();
+		elementDoc.focus();
 	});
 
 });
 
 function setMaskInput(tipoDocumento){
+	var labelRgIe = $('input[name="rg_ie"]').closest('div.form-group').children('label'),
+			mask,
+			options;
+
 	if(tipoDocumento == 1){
-		$('.cpf_cnpj').mask('000.000.000-00', {reverse: true});
+		labelRgIe.html('RG');
+		mask = '000.000.000-00';
 	} else {
-		$('.cpf_cnpj').mask('00.000.000/0000-00', {reverse: true});
+		labelRgIe.html('Inscrição Estadual');
+		mask = '00.000.000/0000-00';
 	}
+
+	options = {
+		onComplete: function(documento) {
+			var element = $('input[name="documento"]');
+					elementFormGroup = element.closest('div.form-group')
+					elementDiv = element.parent('div');
+
+			resetStatusField();
+
+			$.ajax({
+				url: $('input[name="url_ajax_validatedoc"]').val(),
+				type: 'post',
+				dataType: 'json',
+				data:{
+					documento: documento
+				},
+				beforeSend: function(jqXHR,settings){
+					element.attr('readonly','readonly');
+					elementFormGroup.find('div.form-control-comment').html('Aguarde...');
+				},
+				complete: function(jqXHR,textStatus){
+					element.removeAttr('readonly');
+					elementFormGroup.find('div.form-control-comment').empty();
+				},
+				success: function(){
+					elementFormGroup.addClass('has-success');
+				},
+				error: function(jqXHR,textStatus,errorThrown){
+					var message = `
+						<div class="help-block">
+							<ul>
+								<li class="alert alert-danger">${jqXHR.responseJSON.error}</li>
+							</ul>
+						</div>
+					`;
+					elementFormGroup.addClass('has-error');
+					elementDiv.append(message);
+				},
+			});
+		},
+		reverse: true,
+		clearIfNotMatch: true
+	}
+	$('input[name="documento"]').mask(mask, options);
+}
+
+function resetStatusField()
+{
+	var elementFormGroup = $('input[name="documento"]').closest('div.form-group');
+	elementFormGroup.removeClass('has-error');
+	elementFormGroup.removeClass('has-success');
+	elementFormGroup.find('div.help-block').remove();
 }
