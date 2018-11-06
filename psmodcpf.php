@@ -71,6 +71,7 @@ class Psmodcpf extends Module
 			$this->registerHook('validateCustomerFormFields') &&
 			$this->registerHook('displayAdminCustomers') &&
 			$this->registerHook('displayCustomerAccount') &&
+			$this->registerHook('actionCustomerAccountAdd') &&
 			$this->registerHook('additionalCustomerFormFields');
 	}
 
@@ -226,9 +227,25 @@ class Psmodcpf extends Module
 		$this->context->controller->addCSS($this->_path.'/views/css/front.css');
 	}
 
-	public function hookValidateCustomerFormFields()
+	public function hookValidateCustomerFormFields($params)
 	{
-		/* Place your code here. */
+		foreach($params['fields'] as $field){
+			if($field->getName() == 'documento'){
+				$documento = preg_replace("/[^0-9]/", "", $field->getValue());
+				if(strlen($documento) > 11){
+					if(!$this->cnpjValidate($documento)){
+						$field->addError('CNPJ inválido. Verifique por favor!');
+					}
+				} else {
+					if(!$this->cpfValidation($documento)){
+						$field->addError('CPF inválido. Verifique por favor!');
+					}
+				}
+				if($this->checkDuplicate($documento) !== false){
+					$field->addError('O documento informado já está cadastrado!');
+				}
+			}
+		}
 	}
 
 	public function hookDisplayAdminCustomers()
@@ -239,6 +256,21 @@ class Psmodcpf extends Module
 	public function hookDisplayCustomerAccount()
 	{
 		/* Place your code here. */
+	}
+
+	public function hookActionCustomerAccountAdd($params)
+	{
+		var_dump($params);exit;
+
+		$postData = $params['_POST'];
+		$db_prefix = _DB_PREFIX_;
+		$arrData = [
+			"nu_cpf_cnpj" => preg_replace("/[^0-9]/", "", $postData['documento']),
+			"rg_ie" => $postData['rg_ie'],
+			"doc_type" => (int)$postData['tp_documento'],
+			"{$db_prefix}customer_id_customer" => $params['newCustomer']->id
+		];
+		Db::getInstance()->insert('modulo_cpf',$arrData);
 	}
 
 	public function hookAdditionalCustomerFormFields()
@@ -263,9 +295,7 @@ class Psmodcpf extends Module
 		$format['rg_ie'] = (new FormField)
 			->setName('rg_ie')
 			->setType('text')
-			->setLabel('RG')
-			//->setErrors(['seii'=>'sdd'])
-			;
+			->setLabel('RG');
 
 		$format['url_ajax_validatedoc'] = (new FormField)
 			->setName('url_ajax_validatedoc')
@@ -285,15 +315,15 @@ class Psmodcpf extends Module
 		$cnpj = preg_replace("/[^0-9]/", "", $str);
 		
 		if (strlen($cnpj) <> 14) {
-			throw new Exception('O CNPJ deve conter 14 dígitos!');
+			return false;
 		}
 		
 		if (!is_numeric($cnpj)) {
-			throw new Exception('Apenas números são aceitos!');
+			return false;
 		}
 		
 		if (in_array($cnpj, $nulos)) {
-			throw new Exception('CNPJ nulo. Verifique por favor!');
+			return false;
 		}
 		if (strlen($cnpj) > 14){
 			$cnpj = substr($cnpj, 1);
@@ -319,9 +349,7 @@ class Psmodcpf extends Module
 		$sum2 %= 11;
 		$result = ($sum3 && $cnpj[12] == ($sum1 < 2 ? 0 : 11 - $sum1) && $cnpj[13] == ($sum2 < 2 ? 0 : 11 - $sum2)) ? true : false;
 		
-		if(!$result) {
-			throw new Exception('CNPJ inválido. Verifique por favor!');
-		}
+		return $result;
 	}
 
 	public function cpfValidation($item)
@@ -333,14 +361,14 @@ class Psmodcpf extends Module
 		/* Retira todos os caracteres que nao sejam 0-9 */
 		$cpf = preg_replace("/[^0-9]/", "", $item);
 		if (strlen($cpf) <> 11) {
-			throw new Exception('O CPF deve conter 11 dígitos!');
+			return false;
 		}
 		if (!is_numeric($cpf)) {
-			throw new Exception('Apenas números são aceitos!');
+			return false;
 		}
 		/* Retorna falso se o cpf for nulo*/
 		if (in_array($cpf, $nulos)) {
-			throw new Exception('CPF inválido!');
+			return false;
 		}
 		/*Calcula o penúltimo dígito verificador*/
 		$acum = 0;
@@ -351,7 +379,7 @@ class Psmodcpf extends Module
 		$acum = ($x > 1) ? (11 - $x) : 0;
 		/* Retorna falso se o digito calculado eh diferente do passado na string */
 		if ($acum != $cpf[9]) {
-			throw new Exception('CPF inválido. Verifique por favor!');
+			return false;
 		}
 		/*Calcula o último dígito verificador*/
 		$acum = 0;
@@ -362,19 +390,26 @@ class Psmodcpf extends Module
 		$acum = ($x > 1) ? (11 - $x) : 0;
 		/* Retorna falso se o digito calculado eh diferente do passado na string */
 		if ($acum != $cpf[10]) {
-			throw new Exception('CPF inválido. Verifique por favor!');
+			return false;
 		}
+		return true;
 	}
 
 	public function validarDocumento($documento)
 	{
 		$doc = preg_replace("/[^0-9]/", "", $documento);
 		if(strlen($doc) > 11){
-			$this->cnpjValidate($documento);
+			if(!$this->cnpjValidate($documento)){
+				throw new Exception('CNPJ inválido. Verifique por favor!');
+			}
 		} else {
-			$this->cpfValidation($documento);
+			if(!$this->cpfValidation($documento)){
+				throw new Exception('CPF inválido. Verifique por favor!');
+			}
 		}
-		$this->checkDuplicate($doc);
+		if($this->checkDuplicate($doc) !== false){
+			throw new Exception('O documento informado já está cadastrado!');
+		}
 	}
 
 	public function checkDuplicate($value)
@@ -382,8 +417,6 @@ class Psmodcpf extends Module
 		$db_prefix = _DB_PREFIX_;
 		$db = Db::getInstance();
 		$result = $db->getRow("SELECT * FROM `{$db_prefix}modulo_cpf` WHERE `nu_cpf_cnpj` = '{$value}'");
-		if($result !== false){
-			throw new Exception('O documento informado já está cadastrado!');
-		}
+		return $result;
 	}
 }
