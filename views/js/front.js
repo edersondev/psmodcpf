@@ -27,7 +27,8 @@
 */
 
 $(function(){
-	var tipoDocumento = ( $('input[type=radio][name=tp_documento]:checked').val() ? $('input[type=radio][name=tp_documento]:checked').val() : 1 );
+	var tipoDocumento = ( $('input[type=radio][name=tp_documento]:checked').val() ? $('input[type=radio][name=tp_documento]:checked').val() : 1 ),
+			id_customer = $('input[name=id_customer]').val();
 	setMaskInput(tipoDocumento);
 
 	$('input[type=radio][name=tp_documento]').on('change', function(){
@@ -40,6 +41,12 @@ $(function(){
 		setMaskInput(value);
 		elementDoc.focus();
 	});
+
+	if(id_customer){
+		$('input[name="documento"]').attr('readonly','readonly');
+		$('input[name="rg_ie"]').attr('readonly','readonly');
+		$('input[type=radio][name=tp_documento]:not(:checked)').attr('disabled', true);
+	}
 
 });
 

@@ -28,6 +28,10 @@ if (!defined('_PS_VERSION_')) {
 		exit;
 }
 
+include(dirname(__FILE__).'/classes/ValidateDocumento.php');
+
+use PrestaShop\Module\Psmodcpf\ValidateDocumento;
+
 class Psmodcpf extends Module
 {
 	protected $config_form = false;
@@ -232,14 +236,9 @@ class Psmodcpf extends Module
 		foreach($params['fields'] as $field){
 			if($field->getName() == 'documento'){
 				$documento = preg_replace("/[^0-9]/", "", $field->getValue());
-				if(strlen($documento) > 11){
-					if(!$this->cnpjValidate($documento)){
-						$field->addError('CNPJ inválido. Verifique por favor!');
-					}
-				} else {
-					if(!$this->cpfValidation($documento)){
-						$field->addError('CPF inválido. Verifique por favor!');
-					}
+				$objValidateDoc = new ValidateDocumento();
+				if(!$objValidateDoc->validarDocumento($documento)){
+					$field->addError('Número inválido. Verifique por favor!');
 				}
 				if($this->checkDuplicate($documento) !== false){
 					$field->addError('O documento informado já está cadastrado!');
@@ -260,23 +259,19 @@ class Psmodcpf extends Module
 
 	public function hookActionCustomerAccountAdd($params)
 	{
-		var_dump($params);exit;
-
-		$postData = $params['_POST'];
 		$db_prefix = _DB_PREFIX_;
 		$arrData = [
-			"nu_cpf_cnpj" => preg_replace("/[^0-9]/", "", $postData['documento']),
-			"rg_ie" => $postData['rg_ie'],
-			"doc_type" => (int)$postData['tp_documento'],
-			"{$db_prefix}customer_id_customer" => $params['newCustomer']->id
+			"documento" => preg_replace("/[^0-9]/", "", Tools::getValue('documento')),
+			"rg_ie" => Tools::getValue('rg_ie'),
+			"tp_documento" => (int)Tools::getValue('tp_documento'),
+			"id_customer" => $params['newCustomer']->id
 		];
 		Db::getInstance()->insert('modulo_cpf',$arrData);
 	}
 
-	public function hookAdditionalCustomerFormFields()
+	public function hookAdditionalCustomerFormFields($params)
 	{
 		$format = [];
-
 		$tipoDocumento = (new FormField)
 			->setName('tp_documento')
 			->setType('radio-buttons')
@@ -302,121 +297,45 @@ class Psmodcpf extends Module
 			->setType('hidden')
 			->setValue($this->context->link->getModuleLink($this->name,'validatedoc'));
 
+		if(!is_null($this->context->customer->id)){
+			return $this->fillFields($format);
+		}
 		return $format;
 	}
 
-	public function cnpjValidate($str)
+	public function fillFields($format)
 	{
-		$nulos = array("12345678909123","111111111111111","22222222222222","333333333333333",
-			"44444444444444","55555555555555", "666666666666666","77777777777777",
-			"88888888888888", "99999999999999","00000000000000");
-		
-		/* Retira todos os caracteres que nao sejam 0-9 */
-		$cnpj = preg_replace("/[^0-9]/", "", $str);
-		
-		if (strlen($cnpj) <> 14) {
-			return false;
-		}
-		
-		if (!is_numeric($cnpj)) {
-			return false;
-		}
-		
-		if (in_array($cnpj, $nulos)) {
-			return false;
-		}
-		if (strlen($cnpj) > 14){
-			$cnpj = substr($cnpj, 1);
-		}
-		$sum1 = 0;
-		$sum2 = 0;
-		$sum3 = 0;
-		$calc1 = 5;
-		$calc2 = 6;
-		for ($i=0; $i <= 12; $i++) {
-			$calc1 = $calc1 < 2 ? 9 : $calc1;
-			$calc2 = $calc2 < 2 ? 9 : $calc2;
-			if ($i <= 11) {
-				$sum1 += $cnpj[$i] * $calc1;
-			}
-			
-			$sum2 += $cnpj[$i] * $calc2;
-			$sum3 += $cnpj[$i];
-			$calc1--;
-			$calc2--;
-		}
-		$sum1 %= 11;
-		$sum2 %= 11;
-		$result = ($sum3 && $cnpj[12] == ($sum1 < 2 ? 0 : 11 - $sum1) && $cnpj[13] == ($sum2 < 2 ? 0 : 11 - $sum2)) ? true : false;
-		
-		return $result;
-	}
-
-	public function cpfValidation($item)
-	{
-		$nulos = array("12345678909","11111111111","22222222222","33333333333",
-			"44444444444","55555555555","66666666666", "77777777777",
-			"88888888888", "99999999999", "00000000000");
-		
-		/* Retira todos os caracteres que nao sejam 0-9 */
-		$cpf = preg_replace("/[^0-9]/", "", $item);
-		if (strlen($cpf) <> 11) {
-			return false;
-		}
-		if (!is_numeric($cpf)) {
-			return false;
-		}
-		/* Retorna falso se o cpf for nulo*/
-		if (in_array($cpf, $nulos)) {
-			return false;
-		}
-		/*Calcula o penúltimo dígito verificador*/
-		$acum = 0;
-		for ($i = 0; $i < 9; $i++) {
-			$acum += $cpf[$i] * (10 - $i);
-		}
-		$x = $acum % 11;
-		$acum = ($x > 1) ? (11 - $x) : 0;
-		/* Retorna falso se o digito calculado eh diferente do passado na string */
-		if ($acum != $cpf[9]) {
-			return false;
-		}
-		/*Calcula o último dígito verificador*/
-		$acum = 0;
-		for ($i = 0; $i < 10; $i++) {
-			$acum += $cpf[$i] * (11 - $i);
-		}
-		$x = $acum % 11;
-		$acum = ($x > 1) ? (11 - $x) : 0;
-		/* Retorna falso se o digito calculado eh diferente do passado na string */
-		if ($acum != $cpf[10]) {
-			return false;
-		}
-		return true;
+		$db_prefix = _DB_PREFIX_;
+		$db = Db::getInstance();
+		$sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE id_customer = {$this->context->customer->id}";
+		$result = $db->getRow($sql);
+		$format['tp_documento']->setValue($result['tp_documento']);
+		$format['documento']->setValue($result['documento']);
+		$format['rg_ie']->setValue($result['rg_ie']);
+		return $format;
 	}
 
 	public function validarDocumento($documento)
 	{
 		$doc = preg_replace("/[^0-9]/", "", $documento);
-		if(strlen($doc) > 11){
-			if(!$this->cnpjValidate($documento)){
-				throw new Exception('CNPJ inválido. Verifique por favor!');
-			}
-		} else {
-			if(!$this->cpfValidation($documento)){
-				throw new Exception('CPF inválido. Verifique por favor!');
-			}
+		$objValidateDoc = new ValidateDocumento();
+		if(!$objValidateDoc->validarDocumento($doc)){
+			throw new Exception('Número inválido. Verifique por favor!');
 		}
 		if($this->checkDuplicate($doc) !== false){
 			throw new Exception('O documento informado já está cadastrado!');
 		}
 	}
 
-	public function checkDuplicate($value)
+	public function checkDuplicate($documento)
 	{
 		$db_prefix = _DB_PREFIX_;
 		$db = Db::getInstance();
-		$result = $db->getRow("SELECT * FROM `{$db_prefix}modulo_cpf` WHERE `nu_cpf_cnpj` = '{$value}'");
+		$sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE `documento` = '{$documento}'";
+		if(!is_null($this->context->customer->id)){
+			$sql .= " AND id_customer != {$this->context->customer->id}";
+		}
+		$result = $db->getRow($sql);
 		return $result;
 	}
 }
