@@ -97,121 +97,11 @@ class Psmodcpf extends Module
 	 */
 	public function getContent()
 	{
-		/**
-		 * If values have been submitted in the form, process.
-		 */
-		if (((bool)Tools::isSubmit('submitPsmodcpfModule')) == true) {
-			$this->postProcess();
-		}
-
 		$this->context->smarty->assign('module_dir', $this->_path);
 
 		$output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
 
-		return $output.$this->renderForm();
-	}
-
-	/**
-	 * Create the form that will be displayed in the configuration of your module.
-	 */
-	protected function renderForm()
-	{
-		$helper = new HelperForm();
-
-		$helper->show_toolbar = false;
-		$helper->table = $this->table;
-		$helper->module = $this;
-		$helper->default_form_language = $this->context->language->id;
-		$helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
-
-		$helper->identifier = $this->identifier;
-		$helper->submit_action = 'submitPsmodcpfModule';
-		$helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
-			.'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
-		$helper->token = Tools::getAdminTokenLite('AdminModules');
-
-		$helper->tpl_vars = array(
-			'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
-			'languages' => $this->context->controller->getLanguages(),
-			'id_language' => $this->context->language->id,
-		);
-
-		return $helper->generateForm(array($this->getConfigForm()));
-	}
-
-	/**
-	 * Create the structure of your form.
-	 */
-	protected function getConfigForm()
-	{
-		return array(
-			'form' => array(
-				'legend' => array(
-				'title' => $this->l('Settings'),
-				'icon' => 'icon-cogs',
-				),
-				'input' => array(
-					array(
-						'type' => 'switch',
-						'label' => $this->l('Live mode'),
-						'name' => 'PSMODCPF_LIVE_MODE',
-						'is_bool' => true,
-						'desc' => $this->l('Use this module in live mode'),
-						'values' => array(
-							array(
-								'id' => 'active_on',
-								'value' => true,
-								'label' => $this->l('Enabled')
-							),
-							array(
-								'id' => 'active_off',
-								'value' => false,
-								'label' => $this->l('Disabled')
-							)
-						),
-					),
-					array(
-						'col' => 3,
-						'type' => 'text',
-						'prefix' => '<i class="icon icon-envelope"></i>',
-						'desc' => $this->l('Enter a valid email address'),
-						'name' => 'PSMODCPF_ACCOUNT_EMAIL',
-						'label' => $this->l('Email'),
-					),
-					array(
-						'type' => 'password',
-						'name' => 'PSMODCPF_ACCOUNT_PASSWORD',
-						'label' => $this->l('Password'),
-					),
-				),
-				'submit' => array(
-					'title' => $this->l('Save'),
-				),
-			),
-		);
-	}
-
-	/**
-	 * Set values for the inputs.
-	 */
-	protected function getConfigFormValues()
-	{
-		return array(
-			'PSMODCPF_LIVE_MODE' => Configuration::get('PSMODCPF_LIVE_MODE', true),
-			'PSMODCPF_ACCOUNT_EMAIL' => Configuration::get('PSMODCPF_ACCOUNT_EMAIL', 'contact@prestashop.com'),
-			'PSMODCPF_ACCOUNT_PASSWORD' => Configuration::get('PSMODCPF_ACCOUNT_PASSWORD', null),
-		);
-	}
-
-	/**
-	 * Save form data.
-	 */
-	protected function postProcess()
-	{
-		$form_values = $this->getConfigFormValues();
-		foreach (array_keys($form_values) as $key) {
-			Configuration::updateValue($key, Tools::getValue($key));
-		}
+		return $output;
 	}
 
 	/**
@@ -246,7 +136,7 @@ class Psmodcpf extends Module
 			if($field->getName() == 'documento'){
 				$objValidateDoc = new ValidateDocumento();
 				if(!$objValidateDoc->validarDocumento($field->getValue())){
-					$field->addError('Número inválido. Verifique por favor!');
+					$field->addError($this->mensagemError);
 				}
 				$id_customer = ( is_null($this->context->customer->id) ? null : $this->context->customer->id );
 				if($this->checkDuplicate($field->getValue(), $id_customer) !== false){
@@ -363,7 +253,8 @@ class Psmodcpf extends Module
 		$format['rg_ie'] = (new FormField)
 			->setName('rg_ie')
 			->setType('text')
-			->setLabel('RG');
+			->setLabel('RG')
+			->setMaxLength(45);
 
 		$format['url_ajax_validatedoc'] = (new FormField)
 			->setName('url_ajax_validatedoc')
@@ -385,7 +276,7 @@ class Psmodcpf extends Module
 	{
 		$arrData = [
 			"documento" => preg_replace("/[^0-9]/", "", Tools::getValue('documento')),
-			"rg_ie" => Tools::getValue('rg_ie'),
+			"rg_ie" => substr(Tools::getValue('rg_ie'), 0, 45),
 			"tp_documento" => (int)Tools::getValue('tp_documento'),
 			"id_customer" => $id_customer,
 			"date_add" => date('Y-m-d H:i:s'),
@@ -398,7 +289,7 @@ class Psmodcpf extends Module
 	{
 		$arrData = [
 			"documento" => preg_replace("/[^0-9]/", "", Tools::getValue('documento')),
-			"rg_ie" => Tools::getValue('rg_ie'),
+			"rg_ie" => substr(Tools::getValue('rg_ie'), 0, 45),
 			"tp_documento" => (int)Tools::getValue('tp_documento'),
 			"date_upd" => date('Y-m-d H:i:s')
 		];
@@ -429,7 +320,7 @@ class Psmodcpf extends Module
 	{
 		$objValidateDoc = new ValidateDocumento();
 		if(!$objValidateDoc->validarDocumento($documento)){
-			throw new Exception('Número inválido. Verifique por favor!');
+			throw new Exception($this->mensagemError);
 		}
 		$id_customer = ( is_null($this->context->customer->id) ? null : $this->context->customer->id );
 		if($this->checkDuplicate($documento,$id_customer) !== false){

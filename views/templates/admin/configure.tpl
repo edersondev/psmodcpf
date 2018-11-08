@@ -26,23 +26,13 @@
 <div class="panel">
 	<h3><i class="icon icon-credit-card"></i> {l s='Módulo CPF' mod='psmodcpf'}</h3>
 	<p>
-		<strong>{l s='Here is my new generic module!' mod='psmodcpf'}</strong><br />
-		{l s='Thanks to PrestaShop, now I have a great module.' mod='psmodcpf'}<br />
-		{l s='I can configure it using the following configuration form.' mod='psmodcpf'}
+		<strong>{l s='O módulo CPF foi instalado com sucesso' mod='psmodcpf'}</strong>
 	</p>
-	<br />
 	<p>
-		{l s='This module will boost your sales!' mod='psmodcpf'}
+		{l s='Este módulo adiciona os campos CPF/CNPJ e RG/Inscrição estadual no cadastro de usuários.' mod='psmodcpf'}<br />
+		{l s='O módulo faz validação do número CPF/CNPJ e verifica se o mesmo já existe no banco de dados.' mod='psmodcpf'}
 	</p>
-</div>
-
-<div class="panel">
-	<h3><i class="icon icon-tags"></i> {l s='Documentation' mod='psmodcpf'}</h3>
 	<p>
-		&raquo; {l s='You can get a PDF documentation to configure this module' mod='psmodcpf'} :
-		<ul>
-			<li><a href="#" target="_blank">{l s='English' mod='psmodcpf'}</a></li>
-			<li><a href="#" target="_blank">{l s='French' mod='psmodcpf'}</a></li>
-		</ul>
+		{l s='Este módulo não necessita de configurações adicionais.' mod='psmodcpf'}
 	</p>
 </div>
