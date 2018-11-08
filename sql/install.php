@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS `{$db_prefix}modulo_cpf` (
 	`documento` VARCHAR(20) NULL,
 	`rg_ie` VARCHAR(45) NULL,
 	`tp_documento` TINYINT NULL,
+	`date_add` datetime NOT NULL,
+  `date_upd` datetime NOT NULL,
 	`id_customer` INT(10) UNSIGNED NOT NULL,
 	PRIMARY KEY (`id`),
 	INDEX `fk_{$db_prefix}modulo_cpf_{$db_prefix}customer_idx` (`id_customer` ASC),
