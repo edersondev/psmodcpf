@@ -1,7 +1,7 @@
-# Módulo CPF para loja Prestashop 1.6.x
+# Módulo CPF para loja Prestashop 1.7.x
 
-Para a instalação do módulo copie a pasta modulocpf para a pasta modules da sua loja prestashop.
+Este módulo adiciona os campos CPF/CNPJ e RG/Inscrição estadual no cadastro de usuários.
 
-Módulo adiciona o campo CPF / CNPJ no cadastro do cliente, o administrador da loja poderá ver os dados acessando o menu "Clientes" e em seguida clicando no nome do cliente desejado. Os dados de CPF / CNPJ estão no fim da página.
-
-Se a loja já possui clientes cadastrados, a inclusão será feita pelo próprio cliente fazendo login na loja e acessando a página "Minha conta".
+### Características
+- O módulo faz a validação do CPF/CNPJ.
+- Verifica se o CPF/CNPJ já existe no banco de dados.

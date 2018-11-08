@@ -1,289 +1,343 @@
 <?php
-
 /**
- * Description of psmodcpf
- *
- * @author Ederson Ferreira <ederson.dev@gmail.com>
- */
+* 2007-2018 PrestaShop
+*
+* NOTICE OF LICENSE
+*
+* This source file is subject to the Academic Free License (AFL 3.0)
+* that is bundled with this package in the file LICENSE.txt.
+* It is also available through the world-wide-web at this URL:
+* http://opensource.org/licenses/afl-3.0.php
+* If you did not receive a copy of the license and are unable to
+* obtain it through the world-wide-web, please send an email
+* to license@prestashop.com so we can send you a copy immediately.
+*
+* DISCLAIMER
+*
+* Do not edit or add to this file if you wish to upgrade PrestaShop to newer
+* versions in the future. If you wish to customize PrestaShop for your
+* needs please refer to http://www.prestashop.com for more information.
+*
+*  @author    PrestaShop SA <contact@prestashop.com>
+*  @copyright 2007-2018 PrestaShop SA
+*  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+*  International Registered Trademark & Property of PrestaShop SA
+*/
 
-if (!defined('_PS_VERSION_')) { exit; }
+if (!defined('_PS_VERSION_')) {
+		exit;
+}
+
+include(dirname(__FILE__).'/classes/ValidateDocumento.php');
+
+use PrestaShop\Module\Psmodcpf\ValidateDocumento;
 
 class Psmodcpf extends Module
 {
-    public function __construct()
-    {
-        $this->name = 'psmodcpf';
-        $this->tab = 'front_office_features';
-        $this->version = '1.0';
-        $this->author = 'Ederson Ferreira';
-        $this->need_instance = 0;
-        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_); 
-        $this->module_key = '11d9b64cbd7fbcb0355811e490ffcd04';
-        
-        parent::__construct();
-        
-        $this->displayName = 'Módulo CPF';
-        $this->description = 'Adiciona o campo CPF / CNPJ no cadastro do cliente';
-        
-        $themeOverrides = Configuration::get('PS_DISABLE_OVERRIDES');
-        if ( $themeOverrides === '1' ) {
-            $this->warning = $this->l('Modo de reescrita de controller está desativada. ');
-        }
-    }
-    
-    public function install()
-    {
-        if ( !parent::install() || 
-                !$this->createTableCpf() || 
-                !$this->registerHook('createAccountForm') || 
-                !$this->registerHook('displayCustomerAccount') || 
-                !$this->registerHook('displayAdminCustomers') || 
-                !$this->registerHook(array('header', 'footer', 'actionCustomerAccountAdd'))
-            ){
-            return false;
-        }
-        parent::processDeferedClearCache();
-        return true;
-    }
-    
-    public function uninstall()
-    {
-        if ( !parent::uninstall() || !parent::removeOverride('AuthController') ){
-            return false;
-        }
-        parent::processDeferedClearCache();
-        return true;
-    }
-    
-    public function createTableCpf()
-    {
-        $db_prefix = _DB_PREFIX_;
-        $sql = <<<EOF
-            CREATE TABLE IF NOT EXISTS `{$db_prefix}modulo_cpf` (
-                `id` INT NOT NULL AUTO_INCREMENT,
-                `nu_cpf_cnpj` VARCHAR(20) NULL,
-                `rg_ie` VARCHAR(45) NULL,
-                `doc_type` TINYINT NULL,
-                `ps_customer_id_customer` INT(10) UNSIGNED NOT NULL,
-                PRIMARY KEY (`id`),
-                INDEX `fk_ps_modulo_cpf_ps_customer_idx` (`ps_customer_id_customer` ASC),
-                CONSTRAINT `fk_ps_modulo_cpf_ps_customer`
-                  FOREIGN KEY (`ps_customer_id_customer`)
-                  REFERENCES `{$db_prefix}customer` (`id_customer`)
-                  ON DELETE CASCADE
-                  ON UPDATE NO ACTION)
-            ENGINE=InnoDB DEFAULT CHARSET=utf8;
-EOF;
-        
-        try {
-            Db::getInstance()->execute($sql);
-            return true;
-        } catch (Exception $exc) {
-            return false;
-        }
-    }
-    
-    public function hookcreateAccountForm()
-    {
-        $this->context->controller->addJS($this->_path . 'js/jquery.mask.min.js');
-        
-        $arrDocTypes = array(
-            array(
-                'id' => '1',
-                'name' => $this->l('Pessoa Jurídica')
-            ),
-            array(
-                'id' => '2',
-                'name' => $this->l('Pessoa física')
-            )
-        );
-        
-        $this->smarty->assign(array(
-            'arrDocTypes' => $arrDocTypes,
-            'urlValidateDoc' => $this->context->link->getModuleLink('modulocpf','validatedoc')
-        ));
-        
-        return $this->display(__FILE__, 'blockcpf.tpl');
-    }
-    
-    
-    /**
-    * Hook executado após a inclusão do cliente
-    *
-    * @param $params
-    *
-    * @return bool
-    */
-    public function hookActionCustomerAccountAdd($params)
-    {
-        $postData = $params['_POST'];
-       
-        $docType = $postData['doc_type'];
-        $nu_cpf_cnpj = $postData['cpf'];
-        $rg_ie = $postData['rg'];
-        if ( $docType === '1' ) {
-            $nu_cpf_cnpj = $postData['cnpj'];
-            $rg_ie = $postData['nie'];
-        }
-        $numberDoc = preg_replace("/[^0-9]/", "", $nu_cpf_cnpj);
-        
-        $idCustomer = $params['newCustomer']->id;
-        
-        try {
-            if ( !empty($nu_cpf_cnpj) ) {
-                Db::getInstance()->insert('modulo_cpf', array(
-                    'nu_cpf_cnpj'               => pSQL($numberDoc),
-                    'rg_ie'                     => pSQL($rg_ie),
-                    'doc_type'                  => (int)$docType,
-                    'ps_customer_id_customer'   => $idCustomer
-                ));
-            }
-            return true;
-        } catch (Exception $exc) {
-            return false;
-        }
-    }
-    
-    public function hookDisplayAdminCustomers($params)
-    {
-        $id_customer = $params['id_customer'];
-        $db_prefix = _DB_PREFIX_;
-        $sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE `ps_customer_id_customer` = {$id_customer}";
-        $row = Db::getInstance()->getRow($sql);
-        if ( $row ) {
-            $this->smarty->assign('arrData', $row);
-        }
-        return $this->display(__FILE__, 'adminblockcpf.tpl');
-    }
-    
-    public function hookDisplayCustomerAccount()
-    {
-        $linkView = $this->context->link->getModuleLink('modulocpf','view');
-        $this->smarty->assign('linkView', $linkView);
-        return $this->display(__FILE__, 'frontblockcpf.tpl');
-    }
-    
-    public function getContent()
-    {
-        $themeOverrides = Configuration::get('PS_DISABLE_OVERRIDES');
-        $this->smarty->assign('themeOverrides', $themeOverrides);
-        return $this->display(__file__, 'aviso.tpl');
-    }
-    
-    public function cnpjValidate($str)
-    {
-        $nulos = array("12345678909123","111111111111111","22222222222222","333333333333333",
-            "44444444444444","55555555555555", "666666666666666","77777777777777",
-            "88888888888888", "99999999999999","00000000000000");
-        
-        /* Retira todos os caracteres que nao sejam 0-9 */
-        $cnpj = preg_replace("/[^0-9]/", "", $str);
-        
-        if (strlen($cnpj) <> 14) {
-            throw new Exception('O CNPJ deve conter 14 dígitos!');
-        }
-        
-        if (!is_numeric($cnpj)) {
-            throw new Exception('Apenas números são aceitos!');
-        }
-        
-        if($this->checkDuplicate($cnpj) !== false) {
-            throw new Exception('Este CNPJ já está cadastrado!');
-        }
-        
-        if (in_array($cnpj, $nulos)) {
-             throw new Exception('CNPJ nulo. Verifique por favor!');
-        }
+	protected $config_form = false;
 
-        if (strlen($cnpj) > 14){
-            $cnpj = substr($cnpj, 1);
-        }
+	public $mensagemError = 'Número inválido. Verifique por favor!';
 
-        $sum1 = 0;
-        $sum2 = 0;
-        $sum3 = 0;
-        $calc1 = 5;
-        $calc2 = 6;
+	public function __construct()
+	{
+		$this->name = 'psmodcpf';
+		$this->tab = 'front_office_features';
+		$this->version = '2.0.0';
+		$this->author = 'Ederson Ferreira da Silva';
+		$this->need_instance = 0;
 
-        for ($i=0; $i <= 12; $i++) {
-            $calc1 = $calc1 < 2 ? 9 : $calc1;
-            $calc2 = $calc2 < 2 ? 9 : $calc2;
+		/**
+		 * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
+		 */
+		$this->bootstrap = true;
 
-            if ($i <= 11) {
-                $sum1 += $cnpj[$i] * $calc1;
-            }
-            
-            $sum2 += $cnpj[$i] * $calc2;
-            $sum3 += $cnpj[$i];
-            $calc1--;
-            $calc2--;
-        }
+		parent::__construct();
 
-        $sum1 %= 11;
-        $sum2 %= 11;
+		$this->displayName = $this->l('Módulo CPF');
+		$this->description = $this->l('Adiciona o campo CPF / CNPJ no cadastro do cliente');
 
-        $result = ($sum3 && $cnpj[12] == ($sum1 < 2 ? 0 : 11 - $sum1) && $cnpj[13] == ($sum2 < 2 ? 0 : 11 - $sum2)) ? true : false;
-        
-        if(!$result) {
-            throw new Exception('CNPJ inválido. Verifique por favor!');
-        }
-    }
-    
-    public function cpfValidation($item)
-    {
-        $nulos = array("12345678909","11111111111","22222222222","33333333333",
-            "44444444444","55555555555","66666666666", "77777777777",
-            "88888888888", "99999999999", "00000000000");
-        
-        /* Retira todos os caracteres que nao sejam 0-9 */
-        $cpf = preg_replace("/[^0-9]/", "", $item);
+		$this->confirmUninstall = $this->l('Tem certeza de que deseja desinstalar o módulo CPF?');
 
-        if (strlen($cpf) <> 11) {
-            throw new Exception('O CPF deve conter 11 dígitos!');
-        }
-        if (!is_numeric($cpf)) {
-            throw new Exception('Apenas números são aceitos!');
-        }
+		$this->ps_versions_compliancy = array('min' => '1.7', 'max' => _PS_VERSION_);
+	}
 
-        /* Retorna falso se o cpf for nulo*/
-        if (in_array($cpf, $nulos)) {
-            throw new Exception('CPF inválido!');
-        }
+	/**
+	 * Don't forget to create update methods if needed:
+	 * http://doc.prestashop.com/display/PS16/Enabling+the+Auto-Update
+	 */
+	public function install()
+	{
+		Configuration::updateValue('PSMODCPF_LIVE_MODE', false);
 
-        if($this->checkDuplicate($cpf) !== false) {
-            throw new Exception('Este CPF já está cadastrado!');
-        }
-        /*Calcula o penúltimo dígito verificador*/
-        $acum = 0;
-        for ($i = 0; $i < 9; $i++) {
-            $acum += $cpf[$i] * (10 - $i);
-        }
+		include(dirname(__FILE__).'/sql/install.php');
 
-        $x = $acum % 11;
-        $acum = ($x > 1) ? (11 - $x) : 0;
-        /* Retorna falso se o digito calculado eh diferente do passado na string */
-        if ($acum != $cpf[9]) {
-            throw new Exception('CPF inválido. Verifique por favor!');
-        }
-        /*Calcula o último dígito verificador*/
-        $acum = 0;
-        for ($i = 0; $i < 10; $i++) {
-            $acum += $cpf[$i] * (11 - $i);
-        }
+		return parent::install() &&
+			$this->registerHook('header') &&
+			$this->registerHook('backOfficeHeader') &&
+			$this->registerHook('validateCustomerFormFields') &&
+			$this->registerHook('actionCustomerAccountAdd') &&
+			$this->registerHook('actionCustomerAccountUpdate') &&
+			$this->registerHook('actionAdminCustomersFormModifier') &&
+			$this->registerHook('actionAdminCustomersControllerSaveBefore') &&
+			$this->registerHook('actionAdminCustomersControllerSaveAfter') &&
+			$this->registerHook('additionalCustomerFormFields');
+	}
 
-        $x = $acum % 11;
-        $acum = ($x > 1) ? (11 - $x) : 0;
-        /* Retorna falso se o digito calculado eh diferente do passado na string */
-        if ($acum != $cpf[10]) {
-            throw new Exception('CPF inválido. Verifique por favor!');
-        }
-    }
-    
-    public function checkDuplicate($value)
-    {
-        $db_prefix = _DB_PREFIX_;
-        $db = Db::getInstance();
-        $result = $db->getRow("SELECT * FROM `{$db_prefix}modulo_cpf` WHERE `nu_cpf_cnpj` = '{$value}'");
-        return $result;
-    }
+	public function uninstall()
+	{
+		Configuration::deleteByName('PSMODCPF_LIVE_MODE');
+
+		include(dirname(__FILE__).'/sql/uninstall.php');
+
+		return parent::uninstall();
+	}
+
+	/**
+	 * Load the configuration form
+	 */
+	public function getContent()
+	{
+		$this->context->smarty->assign('module_dir', $this->_path);
+
+		$output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
+
+		return $output;
+	}
+
+	/**
+	* Add the CSS & JavaScript files you want to be loaded in the BO.
+	*/
+	public function hookBackOfficeHeader()
+	{
+		
+		if (Tools::getValue('module_name') == $this->name) {
+			$this->context->controller->addCSS($this->_path.'views/css/back.css');
+		}
+
+		if (Tools::getValue('controller') == 'AdminCustomers'){
+			$this->context->controller->addJS($this->_path.'views/js/jquery.mask.min.js');
+			$this->context->controller->addJS($this->_path.'views/js/back.js');
+		}
+	}
+
+	/**
+	 * Add the CSS & JavaScript files you want to be added on the FO.
+	 */
+	public function hookHeader()
+	{
+		$this->context->controller->addJS($this->_path.'/views/js/jquery.mask.min.js');
+		$this->context->controller->addJS($this->_path.'/views/js/front.js');
+		$this->context->controller->addCSS($this->_path.'/views/css/front.css');
+	}
+
+	public function hookValidateCustomerFormFields($params)
+	{
+		foreach($params['fields'] as $field){
+			if($field->getName() == 'documento'){
+				$objValidateDoc = new ValidateDocumento();
+				if(!$objValidateDoc->validarDocumento($field->getValue())){
+					$field->addError($this->mensagemError);
+				}
+				$id_customer = ( is_null($this->context->customer->id) ? null : $this->context->customer->id );
+				if($this->checkDuplicate($field->getValue(), $id_customer) !== false){
+					$field->addError('O documento informado já está cadastrado!');
+				}
+			}
+		}
+	}
+
+	public function hookActionCustomerAccountAdd($params)
+	{
+		$this->insertDocumento($params['newCustomer']->id);
+	}
+
+	public function hookActionCustomerAccountUpdate($params)
+	{
+		$result = $this->searchCustomer($params['customer']->id);
+		if($result === false){
+			$this->insertDocumento($params['customer']->id);
+		}
+	}
+
+	public function hookActionAdminCustomersFormModifier($params)
+	{
+		$extraInputs = &$params['fields'][0]['form']['input'];
+		$extraInputs[] = [
+			'type' => 'radio',
+			'label' => 'Tipo de documento',
+			'name' => 'tp_documento',
+			'required' => true,
+			'class' => 't',
+			'values' => [
+				[
+					'id' => 'documento_1',
+					'value' => 1,
+					'label' => 'CPF'
+				],
+				[
+					'id' => 'documento_2',
+					'value' => 2,
+					'label' => 'CNPJ'
+				]
+			]
+		];
+
+		$extraInputs[] = [
+			'type' => 'text',
+			'label' => 'Número',
+			'name' => 'documento',
+			'required' => true,
+			'col' => '2'
+		];
+
+		$extraInputs[] = [
+			'type' => 'text',
+			'label' => 'RG',
+			'name' => 'rg_ie',
+			'required' => false,
+			'col' => '2'
+		];
+
+		$id_customer = $params['object']->id;
+		$result = $this->searchCustomer($id_customer);
+
+		$extraValues = &$params['fields_value'];
+		$extraValues['tp_documento'] = ( isset($result['tp_documento']) ? $result['tp_documento'] : 1 );
+		$extraValues['documento'] = ( isset($result['documento']) ? $result['documento'] : null );
+		$extraValues['rg_ie'] = ( isset($result['rg_ie']) ? $result['rg_ie'] : null );
+	}
+
+	public function hookActionAdminCustomersControllerSaveBefore($params)
+	{
+		$objValidateDoc = new ValidateDocumento();
+		$documento = Tools::getValue('documento');
+		$id_customer = Tools::getValue('id_customer');
+
+		if(!$objValidateDoc->validarDocumento($documento)){
+			$params['controller']->errors[] = $this->mensagemError;
+		}
+		if($this->checkDuplicate($documento,$id_customer) !== false){
+			$params['controller']->errors[] = "O documento '{$documento}' já está cadastrado!";
+		}
+	}
+
+	public function hookActionAdminCustomersControllerSaveAfter($params)
+	{
+		$id_customer = Tools::getValue('id_customer');
+		$result = $this->searchCustomer($id_customer);
+		if($result === false){
+			$this->insertDocumento($id_customer);
+		} else {
+			$this->updateDocumento($id_customer);
+		}
+	}
+
+	public function hookAdditionalCustomerFormFields($params)
+	{
+		$format = [];
+		$tipoDocumento = (new FormField)
+			->setName('tp_documento')
+			->setType('radio-buttons')
+			->setLabel('Tipo de documento')
+			->addAvailableValue(1,'CPF')
+			->addAvailableValue(2,'CNPJ')
+			->setValue(1);
+		$format[$tipoDocumento->getName()] = $tipoDocumento;
+
+		$format['documento'] = (new FormField)
+			->setName('documento')
+			->setType('text')
+			->setLabel('Número')
+			->setRequired(true);
+
+		$format['rg_ie'] = (new FormField)
+			->setName('rg_ie')
+			->setType('text')
+			->setLabel('RG')
+			->setMaxLength(45);
+
+		$format['url_ajax_validatedoc'] = (new FormField)
+			->setName('url_ajax_validatedoc')
+			->setType('hidden')
+			->setValue($this->context->link->getModuleLink($this->name,'validatedoc'));
+
+		$format['add_documento'] = (new FormField)
+			->setName('add_documento')
+			->setType('hidden')
+			->setValue('true');
+
+		if(!is_null($this->context->customer->id)){
+			return $this->fillFields($format);
+		}
+		return $format;
+	}
+
+	private function insertDocumento($id_customer)
+	{
+		$arrData = [
+			"documento" => preg_replace("/[^0-9]/", "", Tools::getValue('documento')),
+			"rg_ie" => substr(Tools::getValue('rg_ie'), 0, 45),
+			"tp_documento" => (int)Tools::getValue('tp_documento'),
+			"id_customer" => $id_customer,
+			"date_add" => date('Y-m-d H:i:s'),
+			"date_upd" => date('Y-m-d H:i:s')
+		];
+		Db::getInstance()->insert('modulo_cpf',$arrData);
+	}
+
+	private function updateDocumento($id_customer)
+	{
+		$arrData = [
+			"documento" => preg_replace("/[^0-9]/", "", Tools::getValue('documento')),
+			"rg_ie" => substr(Tools::getValue('rg_ie'), 0, 45),
+			"tp_documento" => (int)Tools::getValue('tp_documento'),
+			"date_upd" => date('Y-m-d H:i:s')
+		];
+		Db::getInstance()->update('modulo_cpf', $arrData, 'id_customer = '.(int)$id_customer );
+	}
+
+	public function fillFields($format)
+	{
+		$result = $this->searchCustomer($this->context->customer->id);
+		if($result){
+			$format['tp_documento']->setValue($result['tp_documento']);
+			$format['documento']->setValue($result['documento']);
+			$format['rg_ie']->setValue($result['rg_ie']);
+			$format['add_documento']->setValue('false');
+		}
+		return $format;
+	}
+
+	private function searchCustomer($id_customer)
+	{
+		$db_prefix = _DB_PREFIX_;
+		$db = Db::getInstance();
+		$sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE id_customer = {$id_customer}";
+		return $db->getRow($sql);
+	}
+
+	public function validarDocumento($documento)
+	{
+		$objValidateDoc = new ValidateDocumento();
+		if(!$objValidateDoc->validarDocumento($documento)){
+			throw new Exception($this->mensagemError);
+		}
+		$id_customer = ( is_null($this->context->customer->id) ? null : $this->context->customer->id );
+		if($this->checkDuplicate($documento,$id_customer) !== false){
+			throw new Exception('O documento informado já está cadastrado!');
+		}
+	}
+
+	public function checkDuplicate($documento, $id_customer = null)
+	{
+		$db_prefix = _DB_PREFIX_;
+		$db = Db::getInstance();
+		$doc = preg_replace("/[^0-9]/", "", $documento);
+		$sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE `documento` = '{$doc}'";
+		if(!is_null($id_customer)){
+			$sql .= " AND id_customer != {$id_customer}";
+		}
+		$result = $db->getRow($sql);
+		return $result;
+	}
 }
