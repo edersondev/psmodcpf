@@ -125,9 +125,11 @@ class Psmodcpf extends Module
 	 */
 	public function hookHeader()
 	{
-		$this->context->controller->addJS($this->_path.'/views/js/jquery.mask.min.js');
-		$this->context->controller->addJS($this->_path.'/views/js/front.js');
-		$this->context->controller->addCSS($this->_path.'/views/css/front.css');
+		if (Tools::getValue('controller') == 'identity' || (Tools::getValue('controller') == 'authentication' && Tools::getValue('create_account') == '1')){
+			$this->context->controller->addJS($this->_path.'/views/js/jquery.mask.min.js');
+			$this->context->controller->addJS($this->_path.'/views/js/front.js');
+			$this->context->controller->addCSS($this->_path.'/views/css/front.css');
+		}
 	}
 
 	public function hookValidateCustomerFormFields($params)
