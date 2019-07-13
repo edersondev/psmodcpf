@@ -72,8 +72,8 @@ class Psmodcpf extends Module
 		include(dirname(__FILE__).'/sql/install.php');
 
 		return parent::install() &&
-			$this->registerHook('header') &&
-			$this->registerHook('backOfficeHeader') &&
+			$this->registerHook('actionFrontControllerSetMedia') &&
+			$this->registerHook('actionAdminControllerSetMedia') &&
 			$this->registerHook('validateCustomerFormFields') &&
 			$this->registerHook('actionCustomerAccountAdd') &&
 			$this->registerHook('actionCustomerAccountUpdate') &&
@@ -107,7 +107,7 @@ class Psmodcpf extends Module
 	/**
 	* Add the CSS & JavaScript files you want to be loaded in the BO.
 	*/
-	public function hookBackOfficeHeader()
+	public function hookActionAdminControllerSetMedia()
 	{
 		
 		if (Tools::getValue('module_name') == $this->name) {
@@ -123,12 +123,19 @@ class Psmodcpf extends Module
 	/**
 	 * Add the CSS & JavaScript files you want to be added on the FO.
 	 */
-	public function hookHeader()
+	public function hookActionFrontControllerSetMedia()
 	{
 		if (Tools::getValue('controller') == 'identity' || (Tools::getValue('controller') == 'authentication' && Tools::getValue('create_account') == '1')){
-			$this->context->controller->addJS($this->_path.'/views/js/jquery.mask.min.js');
-			$this->context->controller->addJS($this->_path.'/views/js/front.js');
-			$this->context->controller->addCSS($this->_path.'/views/css/front.css');
+			$this->context->controller->registerJavascript(
+					'module-psmodendereco-jquerymask',
+					'modules/'.$this->name.'/views/js/jquery.mask.min.js',
+					['priority' => 210]
+			);
+			$this->context->controller->registerJavascript(
+					'module-psmodendereco-front',
+					'modules/'.$this->name.'/views/js/front.js',
+					['priority' => 211]
+			);
 		}
 	}
 
