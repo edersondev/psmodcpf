@@ -42,7 +42,7 @@ class Psmodcpf extends Module
 	{
 		$this->name = 'psmodcpf';
 		$this->tab = 'front_office_features';
-		$this->version = '2.0.0';
+		$this->version = '2.0.2';
 		$this->author = 'Ederson Ferreira da Silva';
 		$this->need_instance = 0;
 
