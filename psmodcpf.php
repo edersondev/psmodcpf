@@ -125,7 +125,7 @@ class Psmodcpf extends Module
 	 */
 	public function hookActionFrontControllerSetMedia()
 	{
-		if (Tools::getValue('controller') == 'identity' || (Tools::getValue('controller') == 'authentication' && Tools::getValue('create_account') == '1')){
+		if (Tools::getValue('controller') == 'order' || Tools::getValue('controller') == 'identity' || (Tools::getValue('controller') == 'authentication' && Tools::getValue('create_account') == '1')){
 			$this->context->controller->registerJavascript(
 					'module-psmodendereco-jquerymask',
 					'modules/'.$this->name.'/views/js/jquery.mask.min.js',
