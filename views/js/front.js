@@ -72,7 +72,7 @@ function setMaskInput(tipoDocumento){
 			resetStatusField();
 
 			$.ajax({
-				url: $('input[name="url_ajax_validatedoc"]').val(),
+				url: `${window.location.origin}/index.php?fc=module&module=psmodcpf&controller=validatedoc`,
 				type: 'post',
 				dataType: 'json',
 				data:{

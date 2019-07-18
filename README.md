@@ -8,7 +8,7 @@ Este módulo adiciona os campos CPF/CNPJ e RG/Inscrição estadual no cadastro d
 
 ### Instalação
 Efetue o download do módulo:
-[Link para download do módulo cpf](https://github.com/edersondev/psmodcpf/releases/download/v2.0.3/psmodcpf-2.0.3.zip)
+[Link para download do módulo cpf](https://github.com/edersondev/psmodcpf/releases/download/v2.0.4/psmodcpf-2.0.4.zip)
 
 Acesse a área administrativa e vá em Módulos => Módulos e Serviços.
 Clique no botão "Enviar um módulo". Selecione o arquivo que você baixou no link acima e pronto! Não precisa fazer configurações adicionais.

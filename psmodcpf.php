@@ -42,7 +42,7 @@ class Psmodcpf extends Module
 	{
 		$this->name = 'psmodcpf';
 		$this->tab = 'front_office_features';
-		$this->version = '2.0.3';
+		$this->version = '2.0.4';
 		$this->author = 'Ederson Ferreira da Silva';
 		$this->need_instance = 0;
 
@@ -116,7 +116,7 @@ class Psmodcpf extends Module
 
 		if (Tools::getValue('controller') == 'AdminCustomers'){
 			$this->context->controller->addJS($this->_path.'views/js/jquery.mask.min.js');
-			$this->context->controller->addJS($this->_path.'views/js/back.js');
+			$this->context->controller->addJS($this->_path.'views/js/front.js');
 		}
 	}
 
@@ -147,7 +147,7 @@ class Psmodcpf extends Module
 				if(!$objValidateDoc->validarDocumento($field->getValue())){
 					$field->addError($this->mensagemError);
 				}
-				$id_customer = ( is_null($this->context->customer->id) ? null : $this->context->customer->id );
+				$id_customer = ( is_null($this->context->customer->id) ? 0 : (int)$this->context->customer->id );
 				if($this->checkDuplicate($field->getValue(), $id_customer) !== false){
 					$field->addError('O documento informado já está cadastrado!');
 				}
@@ -162,7 +162,7 @@ class Psmodcpf extends Module
 
 	public function hookActionCustomerAccountUpdate($params)
 	{
-		$result = $this->searchCustomer($params['customer']->id);
+		$result = $this->searchCustomer((int)$params['customer']->id);
 		if($result === false){
 			$this->insertDocumento($params['customer']->id);
 		}
@@ -207,7 +207,7 @@ class Psmodcpf extends Module
 			'col' => '2'
 		];
 
-		$id_customer = $params['object']->id;
+		$id_customer = (int)$params['object']->id;
 		$result = $this->searchCustomer($id_customer);
 
 		$extraValues = &$params['fields_value'];
@@ -220,19 +220,22 @@ class Psmodcpf extends Module
 	{
 		$objValidateDoc = new ValidateDocumento();
 		$documento = Tools::getValue('documento');
-		$id_customer = Tools::getValue('id_customer');
-
-		if(!$objValidateDoc->validarDocumento($documento)){
-			$params['controller']->errors[] = $this->mensagemError;
-		}
-		if($this->checkDuplicate($documento,$id_customer) !== false){
-			$params['controller']->errors[] = "O documento '{$documento}' já está cadastrado!";
+		$id_customer = (int)Tools::getValue('id_customer');
+		if(!empty($documento)) {
+			if(!$objValidateDoc->validarDocumento($documento)){
+				$params['controller']->errors[] = $this->mensagemError;
+			}
+			if($this->checkDuplicate($documento,$id_customer) !== false){
+				$params['controller']->errors[] = "O documento '{$documento}' já está cadastrado!";
+			}
+		} else {
+			$params['controller']->errors[] = 'O campo número do documento é obrigatório';
 		}
 	}
 
 	public function hookActionAdminCustomersControllerSaveAfter($params)
 	{
-		$id_customer = Tools::getValue('id_customer');
+		$id_customer = (int)Tools::getValue('id_customer');
 		$result = $this->searchCustomer($id_customer);
 		if($result === false){
 			$this->insertDocumento($id_customer);
@@ -264,11 +267,6 @@ class Psmodcpf extends Module
 			->setType('text')
 			->setLabel('RG')
 			->setMaxLength(45);
-
-		$format['url_ajax_validatedoc'] = (new FormField)
-			->setName('url_ajax_validatedoc')
-			->setType('hidden')
-			->setValue($this->context->link->getModuleLink($this->name,'validatedoc'));
 
 		$format['add_documento'] = (new FormField)
 			->setName('add_documento')
@@ -307,7 +305,7 @@ class Psmodcpf extends Module
 
 	public function fillFields($format)
 	{
-		$result = $this->searchCustomer($this->context->customer->id);
+		$result = $this->searchCustomer((int)$this->context->customer->id);
 		if($result){
 			$format['tp_documento']->setValue($result['tp_documento']);
 			$format['documento']->setValue($result['documento']);
@@ -319,6 +317,9 @@ class Psmodcpf extends Module
 
 	private function searchCustomer($id_customer)
 	{
+		if($id_customer == 0){
+			return [];
+		}
 		$db_prefix = _DB_PREFIX_;
 		$db = Db::getInstance();
 		$sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE id_customer = {$id_customer}";
@@ -337,13 +338,13 @@ class Psmodcpf extends Module
 		}
 	}
 
-	public function checkDuplicate($documento, $id_customer = null)
+	public function checkDuplicate($documento, $id_customer = 0)
 	{
 		$db_prefix = _DB_PREFIX_;
 		$db = Db::getInstance();
 		$doc = preg_replace("/[^0-9]/", "", $documento);
 		$sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE `documento` = '{$doc}'";
-		if(!is_null($id_customer)){
+		if($id_customer > 0){
 			$sql .= " AND id_customer != {$id_customer}";
 		}
 		$result = $db->getRow($sql);
