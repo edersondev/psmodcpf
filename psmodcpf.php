@@ -42,7 +42,7 @@ class Psmodcpf extends Module
 	{
 		$this->name = 'psmodcpf';
 		$this->tab = 'front_office_features';
-		$this->version = '2.0.4';
+		$this->version = '2.0.5';
 		$this->author = 'Ederson Ferreira da Silva';
 		$this->need_instance = 0;
 
@@ -116,7 +116,7 @@ class Psmodcpf extends Module
 
 		if (Tools::getValue('controller') == 'AdminCustomers'){
 			$this->context->controller->addJS($this->_path.'views/js/jquery.mask.min.js');
-			$this->context->controller->addJS($this->_path.'views/js/front.js');
+			$this->context->controller->addJS($this->_path.'views/js/back.js');
 		}
 	}
 
