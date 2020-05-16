@@ -127,12 +127,12 @@ class Psmodcpf extends Module
 	{
 		if (Tools::getValue('controller') == 'order' || Tools::getValue('controller') == 'identity' || (Tools::getValue('controller') == 'authentication' && Tools::getValue('create_account') == '1')){
 			$this->context->controller->registerJavascript(
-					'module-psmodendereco-jquerymask',
+					'module-psmodcpf-jquerymask',
 					'modules/'.$this->name.'/views/js/jquery.mask.min.js',
 					['priority' => 210]
 			);
 			$this->context->controller->registerJavascript(
-					'module-psmodendereco-front',
+					'module-psmodcpf-front',
 					'modules/'.$this->name.'/views/js/front.js',
 					['priority' => 211]
 			);
