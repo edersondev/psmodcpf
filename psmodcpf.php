@@ -31,6 +31,9 @@ if (!defined('_PS_VERSION_')) {
 include(dirname(__FILE__).'/classes/ValidateDocumento.php');
 
 use PrestaShop\Module\Psmodcpf\ValidateDocumento;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 class Psmodcpf extends Module
 {
@@ -42,7 +45,7 @@ class Psmodcpf extends Module
 	{
 		$this->name = 'psmodcpf';
 		$this->tab = 'front_office_features';
-		$this->version = '2.0.5';
+		$this->version = '2.0.6';
 		$this->author = 'Ederson Ferreira da Silva';
 		$this->need_instance = 0;
 
@@ -80,7 +83,8 @@ class Psmodcpf extends Module
 			$this->registerHook('actionAdminCustomersFormModifier') &&
 			$this->registerHook('actionAdminCustomersControllerSaveBefore') &&
 			$this->registerHook('actionAdminCustomersControllerSaveAfter') &&
-			$this->registerHook('additionalCustomerFormFields');
+			$this->registerHook('additionalCustomerFormFields') &&
+			$this->registerHook('actionCustomerFormBuilderModifier');
 	}
 
 	public function uninstall()
@@ -165,6 +169,39 @@ class Psmodcpf extends Module
 		$result = $this->searchCustomer((int)$params['customer']->id);
 		if($result === false){
 			$this->insertDocumento($params['customer']->id);
+		}
+	}
+
+	public function hookActionCustomerFormBuilderModifier($params)
+	{
+		/** @var FormBuilderInterface $formBuilder */
+		$formBuilder = $params['form_builder'];
+		if($params['route'] === 'admin_customers_edit'){
+			$formBuilder->add('tp_documento', ChoiceType::class, [
+				'choices' => ['CPF' => '1','CNPJ' => '2'],
+				'multiple' => false,
+				'expanded' => true,
+				'required' => false,
+				'placeholder' => null,
+				'label' => 'Tipo de documento',
+				'disabled' => true
+			])
+			->add('documento',TextType::class,[
+				'label' => 'Número',
+				'disabled' => true,
+				'required' => false
+			])
+			->add('rg_ie',TextType::class,[
+				'label' => 'RG',
+				'disabled' => true
+			]);
+	
+			$formData = $params['data'];
+			$formData['tp_documento'] = '1';
+			if(!is_null($this->context->customer)){
+				$formData = $this->fillFieldsAdmin($params['data']);
+			}
+			$formBuilder->setData($formData);
 		}
 	}
 
@@ -274,7 +311,7 @@ class Psmodcpf extends Module
 			->setValue('true');
 
 		if(!is_null($this->context->customer->id)){
-			return $this->fillFields($format);
+			return $this->fillFieldsFront($format);
 		}
 		return $format;
 	}
@@ -303,7 +340,18 @@ class Psmodcpf extends Module
 		Db::getInstance()->update('modulo_cpf', $arrData, 'id_customer = '.(int)$id_customer );
 	}
 
-	public function fillFields($format)
+	public function fillFieldsAdmin(array $formData)
+	{
+		$result = $this->searchCustomer((int)$this->context->customer->id);
+		if($result){
+			$formData['tp_documento'] = $result['tp_documento'];
+			$formData['documento'] = $result['documento'];
+			$formData['rg_ie'] = $result['rg_ie'];
+		}
+		return $formData;
+	}
+
+	public function fillFieldsFront($format)
 	{
 		$result = $this->searchCustomer((int)$this->context->customer->id);
 		if($result){
