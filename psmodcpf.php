@@ -1,4 +1,7 @@
 <?php
+
+require_once 'vendor/autoload.php';
+
 /**
 * 2007-2018 PrestaShop
 *
@@ -28,7 +31,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-use PrestaShop\Module\Psmodcpf\ValidateDocumento;
+use PsmodCpf\Utils\ValidateDocumento;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -125,8 +128,9 @@ class Psmodcpf extends Module
         if (
             Tools::getValue('controller') == 'order' ||
             Tools::getValue('controller') == 'identity' ||
+            Tools::getValue('controller') == 'registration' ||
             (Tools::getValue('controller') == 'authentication' && Tools::getValue('create_account') == '1')
-        ){
+        ) {
             $this->context->controller->registerJavascript(
                 'module-psmodcpf-jquerymask',
                 'modules/'.$this->name.'/views/js/jquery.mask.min.js',
@@ -173,7 +177,7 @@ class Psmodcpf extends Module
     {
         /** @var FormBuilderInterface $formBuilder */
         $formBuilder = $params['form_builder'];
-        if ($params['route'] === 'admin_customers_edit'){
+        if ($params['route'] === 'admin_customers_edit') {
             $formBuilder->add('tp_documento', ChoiceType::class, [
                 'choices' => ['CPF' => '1','CNPJ' => '2'],
                 'multiple' => false,
