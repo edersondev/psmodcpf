@@ -1,7 +1,5 @@
 <?php
 
-require_once 'vendor/autoload.php';
-
 /**
 * 2007-2018 PrestaShop
 *
@@ -31,12 +29,14 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+$autoloadPath = __DIR__ . '/vendor/autoload.php';
+if (file_exists($autoloadPath)) {
+    require_once $autoloadPath;
+}
+
 use PsmodCpf\Utils\ValidateDocumento;
 use PsmodCpf\Utils\PsmodCpfAdmin;
 use PsmodCpf\Utils\PsmodCpfFront;
-use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 class Psmodcpf extends Module
 {
@@ -146,7 +146,7 @@ SQL;
                 if (!$objValidateDoc->validarDocumento($field->getValue())) {
                     $field->addError($this->mensagemError);
                 }
-                $id_customer = ( is_null($this->context->customer->id) ? 0 : (int)$this->context->customer->id );
+                $id_customer = (is_null($this->context->customer->id) ? 0 : (int)$this->context->customer->id);
                 if ($this->checkDuplicate($field->getValue(), $id_customer) !== false) {
                     $field->addError('O documento informado já está cadastrado!');
                 }
@@ -154,59 +154,11 @@ SQL;
         }
     }
 
-    public function hookActionCustomerAccountAdd($params)
-    {
-        $this->insertDocumento($params['newCustomer']->id);
-    }
-
-    public function hookActionCustomerAccountUpdate($params)
-    {
-        $result = $this->searchCustomer((int)$params['customer']->id);
-        if ($result === false) {
-            $this->insertDocumento($params['customer']->id);
-        }
-    }
-
-    public function hookAdditionalCustomerFormFields($params)
-    {
-        $format = [];
-        $tipoDocumento = (new FormField)
-            ->setName('tp_documento')
-            ->setType('radio-buttons')
-            ->setLabel('Tipo de documento')
-            ->addAvailableValue(1, 'CPF')
-            ->addAvailableValue(2, 'CNPJ')
-            ->setValue(1);
-        $format[$tipoDocumento->getName()] = $tipoDocumento;
-
-        $format['documento'] = (new FormField)
-            ->setName('documento')
-            ->setType('text')
-            ->setLabel('Número')
-            ->setRequired(true);
-
-        $format['rg_ie'] = (new FormField)
-            ->setName('rg_ie')
-            ->setType('text')
-            ->setLabel('RG')
-            ->setMaxLength(45);
-
-        $format['add_documento'] = (new FormField)
-            ->setName('add_documento')
-            ->setType('hidden')
-            ->setValue('true');
-
-        if (!is_null($this->context->customer->id)) {
-            return $this->fillFieldsFront($format);
-        }
-        return $format;
-    }
-
     public function insertDocumento($id_customer)
     {
         $dbDate = date('Y-m-d H:i:s');
         $arrData = [
-            "documento" => preg_replace("/[\D]/", "", Tools::getValue('documento')),
+            "documento" => $this->formatarDocumento(Tools::getValue('documento')),
             "rg_ie" => substr(Tools::getValue('rg_ie'), 0, 45),
             "tp_documento" => (int)Tools::getValue('tp_documento'),
             "id_customer" => $id_customer,
@@ -219,15 +171,15 @@ SQL;
     public function updateDocumento($id_customer)
     {
         $arrData = [
-            "documento" => preg_replace("/[\D]/", "", Tools::getValue('documento')),
+            "documento" => $this->formatarDocumento(Tools::getValue('documento')),
             "rg_ie" => substr(Tools::getValue('rg_ie'), 0, 45),
             "tp_documento" => (int)Tools::getValue('tp_documento'),
             "date_upd" => date('Y-m-d H:i:s')
         ];
-        Db::getInstance()->update('modulo_cpf', $arrData, 'id_customer = '.(int)$id_customer );
+        Db::getInstance()->update('modulo_cpf', $arrData, 'id_customer = '.(int)$id_customer);
     }
 
-    private function searchCustomer($id_customer)
+    public function searchCustomer($id_customer)
     {
         if ($id_customer == 0) {
             return [];
@@ -244,7 +196,7 @@ SQL;
         if (!$objValidateDoc->validarDocumento($documento)) {
             throw new Exception($this->mensagemError);
         }
-        $id_customer = ( is_null($this->context->customer->id) ? null : $this->context->customer->id );
+        $id_customer = (is_null($this->context->customer->id) ? null : $this->context->customer->id);
         if ($this->checkDuplicate($documento, $id_customer) !== false) {
             throw new Exception('O documento informado já está cadastrado!');
         }
@@ -254,11 +206,16 @@ SQL;
     {
         $db_prefix = _DB_PREFIX_;
         $db = Db::getInstance();
-        $doc = preg_replace("/[\D]/", "", $documento);
+        $doc = $this->formatarDocumento($documento);
         $sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE `documento` = '{$doc}'";
         if ($id_customer > 0) {
             $sql .= " AND id_customer != {$id_customer}";
         }
         return $db->getRow($sql);
+    }
+
+    public function formatarDocumento($documento)
+    {
+        return preg_replace("/[\D]/", "", $documento);
     }
 }

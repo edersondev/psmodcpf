@@ -3,6 +3,7 @@
 namespace PsmodCpf\Utils;
 
 use Tools;
+use FormField;
 
 trait PsmodCpfFront
 {
@@ -38,6 +39,54 @@ trait PsmodCpfFront
             $format['documento']->setValue($result['documento']);
             $format['rg_ie']->setValue($result['rg_ie']);
             $format['add_documento']->setValue('false');
+        }
+        return $format;
+    }
+
+    public function hookActionCustomerAccountAdd($params)
+    {
+        $this->insertDocumento($params['newCustomer']->id);
+    }
+
+    public function hookActionCustomerAccountUpdate($params)
+    {
+        $result = $this->searchCustomer((int)$params['customer']->id);
+        if ($result === false) {
+            $this->insertDocumento($params['customer']->id);
+        }
+    }
+
+    public function hookAdditionalCustomerFormFields()
+    {
+        $format = [];
+        $tipoDocumento = (new FormField)
+            ->setName('tp_documento')
+            ->setType('radio-buttons')
+            ->setLabel('Tipo de documento')
+            ->addAvailableValue(1, 'CPF')
+            ->addAvailableValue(2, 'CNPJ')
+            ->setValue(1);
+        $format[$tipoDocumento->getName()] = $tipoDocumento;
+
+        $format['documento'] = (new FormField)
+            ->setName('documento')
+            ->setType('text')
+            ->setLabel('Número')
+            ->setRequired(true);
+
+        $format['rg_ie'] = (new FormField)
+            ->setName('rg_ie')
+            ->setType('text')
+            ->setLabel('RG')
+            ->setMaxLength(45);
+
+        $format['add_documento'] = (new FormField)
+            ->setName('add_documento')
+            ->setType('hidden')
+            ->setValue('true');
+
+        if (!is_null($this->context->customer->id)) {
+            return $this->fillFieldsFront($format);
         }
         return $format;
     }
