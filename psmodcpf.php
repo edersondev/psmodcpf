@@ -34,7 +34,6 @@ if (file_exists($autoloadPath)) {
     require_once $autoloadPath;
 }
 
-use PsmodCpf\Utils\ValidateDocumento;
 use PsmodCpf\Utils\PsmodCpfAdmin;
 use PsmodCpf\Utils\PsmodCpfFront;
 
@@ -45,6 +44,20 @@ class Psmodcpf extends Module
     protected $config_form = false;
 
     public $mensagemError = 'Número inválido. Verifique por favor!';
+
+    protected $_listOfHooks = [
+        'actionFrontControllerSetMedia',
+        'actionAdminControllerSetMedia',
+        'validateCustomerFormFields',
+        'actionCustomerAccountAdd',
+        'actionCustomerAccountUpdate',
+        'actionBeforeUpdateCustomerFormHandler',
+        'actionAfterUpdateCustomerFormHandler',
+        'additionalCustomerFormFields',
+        'actionCustomerFormBuilderModifier',
+        'actionBeforeCreateCustomerFormHandler',
+        'actionAfterCreateCustomerFormHandler'
+    ];
 
     public function __construct()
     {
@@ -73,29 +86,32 @@ class Psmodcpf extends Module
      * Don't forget to create update methods if needed:
      * http://doc.prestashop.com/display/PS16/Enabling+the+Auto-Update
      */
-    public function install()
+    public function install(): bool
     {
         Configuration::updateValue('PSMODCPF_LIVE_MODE', false);
 
         $this->createTable();
+        
+        return parent::install() && $this->registerHooks();
+    }
 
-        return parent::install() &&
-            $this->registerHook('actionFrontControllerSetMedia') &&
-            $this->registerHook('actionAdminControllerSetMedia') &&
-            $this->registerHook('validateCustomerFormFields') &&
-            $this->registerHook('actionCustomerAccountAdd') &&
-            $this->registerHook('actionCustomerAccountUpdate') &&
-            $this->registerHook('actionAdminCustomersFormModifier') &&
-            $this->registerHook('actionAdminCustomersControllerSaveBefore') &&
-            $this->registerHook('actionAdminCustomersControllerSaveAfter') &&
-            $this->registerHook('additionalCustomerFormFields') &&
-            $this->registerHook('actionCustomerFormBuilderModifier');
+    public function registerHooks(): bool
+    {
+        $validHook = true;
+
+        foreach ($this->_listOfHooks as $hook) {
+            if (!$this->registerHook($hook)) {
+                $validHook = false;
+            }
+        }
+
+        return $validHook;
     }
 
     /**
      * @return void
      */
-    public function createTable()
+    public function createTable(): void
     {
         $db_prefix = _DB_PREFIX_;
         $db_engine = _MYSQL_ENGINE_;
@@ -109,6 +125,7 @@ class Psmodcpf extends Module
             `date_upd` datetime NOT NULL,
             `id_customer` INT(10) UNSIGNED NOT NULL,
         PRIMARY KEY (`id`),
+        UNIQUE KEY `{$db_prefix}modulo_cpf_UN` (`documento`),
         INDEX `fk_{$db_prefix}modulo_cpf_{$db_prefix}customer_idx` (`id_customer` ASC),
         CONSTRAINT `fk_{$db_prefix}modulo_cpf_{$db_prefix}customer`
             FOREIGN KEY (`id_customer`)
@@ -121,9 +138,13 @@ SQL;
         Db::getInstance()->execute($query);
     }
 
-    public function uninstall()
+    public function uninstall(): bool
     {
         Configuration::deleteByName('PSMODCPF_LIVE_MODE');
+
+        foreach ($this->_listOfHooks as $hook) {
+            $this->unregisterHook($hook);
+        }
 
         return parent::uninstall();
     }
@@ -131,55 +152,44 @@ SQL;
     /**
      * Load the configuration form
      */
-    public function getContent()
+    public function getContent(): string
     {
         $this->context->smarty->assign('module_dir', $this->_path);
 
         return $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
     }
 
-    public function hookValidateCustomerFormFields($params)
+    public function insertDocumento($id_customer, $form_data): void
     {
-        foreach ($params['fields'] as $field) {
-            if ($field->getName() == 'documento') {
-                $objValidateDoc = new ValidateDocumento();
-                if (!$objValidateDoc->validarDocumento($field->getValue())) {
-                    $field->addError($this->mensagemError);
-                }
-                $id_customer = (is_null($this->context->customer->id) ? 0 : (int)$this->context->customer->id);
-                if ($this->checkDuplicate($field->getValue(), $id_customer) !== false) {
-                    $field->addError('O documento informado já está cadastrado!');
-                }
-            }
-        }
-    }
-
-    public function insertDocumento($id_customer)
-    {
-        $dbDate = date('Y-m-d H:i:s');
-        $arrData = [
-            "documento" => $this->formatarDocumento(Tools::getValue('documento')),
-            "rg_ie" => substr(Tools::getValue('rg_ie'), 0, 45),
-            "tp_documento" => (int)Tools::getValue('tp_documento'),
-            "id_customer" => $id_customer,
-            "date_add" => $dbDate,
-            "date_upd" => $dbDate
-        ];
+        $arrData = $this->getDataToDb($form_data, $id_customer, true);
         Db::getInstance()->insert('modulo_cpf', $arrData);
     }
 
-    public function updateDocumento($id_customer)
+    public function updateDocumento($id_customer, $form_data): void
     {
-        $arrData = [
-            "documento" => $this->formatarDocumento(Tools::getValue('documento')),
-            "rg_ie" => substr(Tools::getValue('rg_ie'), 0, 45),
-            "tp_documento" => (int)Tools::getValue('tp_documento'),
-            "date_upd" => date('Y-m-d H:i:s')
-        ];
+        $arrData = $this->getDataToDb($form_data, $id_customer);
         Db::getInstance()->update('modulo_cpf', $arrData, 'id_customer = '.(int)$id_customer);
     }
 
-    public function searchCustomer($id_customer)
+    public function getDataToDb($form_data, $id_customer, $new_register = false): array
+    {
+        $dbDate = date('Y-m-d H:i:s');
+        $arrData = [
+            "documento" => $this->formatarDocumento($form_data['documento']),
+            "rg_ie" => substr($form_data['rg_ie'], 0, 45),
+            "tp_documento" => (int)$form_data['tp_documento'],
+            "date_upd" => $dbDate
+        ];
+
+        if ($new_register) {
+            $arrData['id_customer'] = $id_customer;
+            $arrData['date_add'] = $dbDate;
+        }
+
+        return $arrData;
+    }
+
+    public function searchCustomer($id_customer): array|bool|object|null
     {
         if ($id_customer == 0) {
             return [];
@@ -190,31 +200,19 @@ SQL;
         return $db->getRow($sql);
     }
 
-    public function validarDocumento($documento)
-    {
-        $objValidateDoc = new ValidateDocumento();
-        if (!$objValidateDoc->validarDocumento($documento)) {
-            throw new Exception($this->mensagemError);
-        }
-        $id_customer = (is_null($this->context->customer->id) ? null : $this->context->customer->id);
-        if ($this->checkDuplicate($documento, $id_customer) !== false) {
-            throw new Exception('O documento informado já está cadastrado!');
-        }
-    }
-
-    public function checkDuplicate($documento, $id_customer = 0)
+    public function checkDuplicate($documento, $id_customer = null): array|bool|object|null
     {
         $db_prefix = _DB_PREFIX_;
         $db = Db::getInstance();
         $doc = $this->formatarDocumento($documento);
         $sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE `documento` = '{$doc}'";
-        if ($id_customer > 0) {
+        if (!is_null($id_customer)) {
             $sql .= " AND id_customer != {$id_customer}";
         }
         return $db->getRow($sql);
     }
 
-    public function formatarDocumento($documento)
+    public function formatarDocumento($documento): string
     {
         return preg_replace("/[\D]/", "", $documento);
     }

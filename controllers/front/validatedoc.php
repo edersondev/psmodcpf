@@ -12,7 +12,7 @@ class PsmodcpfValidatedocModuleFrontController extends ModuleFrontController
             exit;
         }
         try {
-            $this->module->validarDocumento($documento);
+            $this->module->validarDocumentoAjax($documento);
             $arrRetorno['status'] = true;
         } catch (Exception $e) {
             http_response_code(422);
