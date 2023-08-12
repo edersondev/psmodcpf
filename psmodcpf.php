@@ -42,6 +42,18 @@ class Psmodcpf extends Module
 
 	public $mensagemError = 'Número inválido. Verifique por favor!';
 
+	protected $_listOfHooks = [
+		'actionFrontControllerSetMedia',
+		'actionAdminControllerSetMedia',
+		'validateCustomerFormFields',
+		'actionCustomerAccountAdd',
+		'actionCustomerAccountUpdate',
+		'actionAdminCustomersFormModifier',
+		'actionAfterUpdateCustomerFormHandler',
+		'additionalCustomerFormFields',
+		'actionCustomerFormBuilderModifier'
+	];
+
 	public function __construct()
 	{
 		$this->name = 'psmodcpf';
@@ -75,24 +87,31 @@ class Psmodcpf extends Module
 
 		include(dirname(__FILE__) . '/sql/install.php');
 
-		return parent::install() &&
-			$this->registerHook('actionFrontControllerSetMedia') &&
-			$this->registerHook('actionAdminControllerSetMedia') &&
-			$this->registerHook('validateCustomerFormFields') &&
-			$this->registerHook('actionCustomerAccountAdd') &&
-			$this->registerHook('actionCustomerAccountUpdate') &&
-			$this->registerHook('actionAdminCustomersFormModifier') &&
-			$this->registerHook('actionAdminCustomersControllerSaveBefore') &&
-			$this->registerHook('actionAdminCustomersControllerSaveAfter') &&
-			$this->registerHook('additionalCustomerFormFields') &&
-			$this->registerHook('actionCustomerFormBuilderModifier');
+		return parent::install() && $this->registerHooks();
 	}
+
+	public function registerHooks(): bool
+    {
+        $validHook = true;
+
+        foreach ($this->_listOfHooks as $hook) {
+            if (!$this->registerHook($hook)) {
+                $validHook = false;
+            }
+        }
+
+        return $validHook;
+    }
 
 	public function uninstall()
 	{
 		Configuration::deleteByName('PSMODCPF_LIVE_MODE');
 
 		include(dirname(__FILE__) . '/sql/uninstall.php');
+
+		foreach ($this->_listOfHooks as $hook) {
+            $this->unregisterHook($hook);
+        }
 
 		return parent::uninstall();
 	}
