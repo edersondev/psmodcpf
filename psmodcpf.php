@@ -1,34 +1,35 @@
 <?php
+
 /**
-* 2007-2018 PrestaShop
-*
-* NOTICE OF LICENSE
-*
-* This source file is subject to the Academic Free License (AFL 3.0)
-* that is bundled with this package in the file LICENSE.txt.
-* It is also available through the world-wide-web at this URL:
-* http://opensource.org/licenses/afl-3.0.php
-* If you did not receive a copy of the license and are unable to
-* obtain it through the world-wide-web, please send an email
-* to license@prestashop.com so we can send you a copy immediately.
-*
-* DISCLAIMER
-*
-* Do not edit or add to this file if you wish to upgrade PrestaShop to newer
-* versions in the future. If you wish to customize PrestaShop for your
-* needs please refer to http://www.prestashop.com for more information.
-*
-*  @author    PrestaShop SA <contact@prestashop.com>
-*  @copyright 2007-2018 PrestaShop SA
-*  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
-*  International Registered Trademark & Property of PrestaShop SA
-*/
+ * 2007-2018 PrestaShop
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@prestashop.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade PrestaShop to newer
+ * versions in the future. If you wish to customize PrestaShop for your
+ * needs please refer to http://www.prestashop.com for more information.
+ *
+ *  @author    PrestaShop SA <contact@prestashop.com>
+ *  @copyright 2007-2018 PrestaShop SA
+ *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ *  International Registered Trademark & Property of PrestaShop SA
+ */
 
 if (!defined('_PS_VERSION_')) {
-		exit;
+	exit;
 }
 
-include(dirname(__FILE__).'/classes/ValidateDocumento.php');
+include(dirname(__FILE__) . '/classes/ValidateDocumento.php');
 
 use PrestaShop\Module\Psmodcpf\ValidateDocumento;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -72,7 +73,7 @@ class Psmodcpf extends Module
 	{
 		Configuration::updateValue('PSMODCPF_LIVE_MODE', false);
 
-		include(dirname(__FILE__).'/sql/install.php');
+		include(dirname(__FILE__) . '/sql/install.php');
 
 		return parent::install() &&
 			$this->registerHook('actionFrontControllerSetMedia') &&
@@ -91,7 +92,7 @@ class Psmodcpf extends Module
 	{
 		Configuration::deleteByName('PSMODCPF_LIVE_MODE');
 
-		include(dirname(__FILE__).'/sql/uninstall.php');
+		include(dirname(__FILE__) . '/sql/uninstall.php');
 
 		return parent::uninstall();
 	}
@@ -103,24 +104,24 @@ class Psmodcpf extends Module
 	{
 		$this->context->smarty->assign('module_dir', $this->_path);
 
-		$output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
+		$output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
 
 		return $output;
 	}
 
 	/**
-	* Add the CSS & JavaScript files you want to be loaded in the BO.
-	*/
+	 * Add the CSS & JavaScript files you want to be loaded in the BO.
+	 */
 	public function hookActionAdminControllerSetMedia()
 	{
-		
+
 		if (Tools::getValue('module_name') == $this->name) {
-			$this->context->controller->addCSS($this->_path.'views/css/back.css');
+			$this->context->controller->addCSS($this->_path . 'views/css/back.css');
 		}
 
-		if (Tools::getValue('controller') == 'AdminCustomers'){
-			$this->context->controller->addJS($this->_path.'views/js/jquery.mask.min.js');
-			$this->context->controller->addJS($this->_path.'views/js/back.js');
+		if (Tools::getValue('controller') == 'AdminCustomers') {
+			$this->context->controller->addJS($this->_path . 'views/js/jquery.mask.min.js');
+			$this->context->controller->addJS($this->_path . 'views/js/back.js');
 		}
 	}
 
@@ -129,30 +130,30 @@ class Psmodcpf extends Module
 	 */
 	public function hookActionFrontControllerSetMedia()
 	{
-		if (Tools::getValue('controller') == 'order' || Tools::getValue('controller') == 'identity' || (Tools::getValue('controller') == 'authentication' && Tools::getValue('create_account') == '1')){
+		if (Tools::getValue('controller') == 'order' || Tools::getValue('controller') == 'identity' || (Tools::getValue('controller') == 'authentication' && Tools::getValue('create_account') == '1')) {
 			$this->context->controller->registerJavascript(
-					'module-psmodcpf-jquerymask',
-					'modules/'.$this->name.'/views/js/jquery.mask.min.js',
-					['priority' => 210]
+				'module-psmodcpf-jquerymask',
+				'modules/' . $this->name . '/views/js/jquery.mask.min.js',
+				['priority' => 210]
 			);
 			$this->context->controller->registerJavascript(
-					'module-psmodcpf-front',
-					'modules/'.$this->name.'/views/js/front.js',
-					['priority' => 211]
+				'module-psmodcpf-front',
+				'modules/' . $this->name . '/views/js/front.js',
+				['priority' => 211]
 			);
 		}
 	}
 
 	public function hookValidateCustomerFormFields($params)
 	{
-		foreach($params['fields'] as $field){
-			if($field->getName() == 'documento'){
+		foreach ($params['fields'] as $field) {
+			if ($field->getName() == 'documento') {
 				$objValidateDoc = new ValidateDocumento();
-				if(!$objValidateDoc->validarDocumento($field->getValue())){
+				if (!$objValidateDoc->validarDocumento($field->getValue())) {
 					$field->addError($this->mensagemError);
 				}
-				$id_customer = ( is_null($this->context->customer->id) ? 0 : (int)$this->context->customer->id );
-				if($this->checkDuplicate($field->getValue(), $id_customer) !== false){
+				$id_customer = (is_null($this->context->customer->id) ? 0 : (int)$this->context->customer->id);
+				if ($this->checkDuplicate($field->getValue(), $id_customer) !== false) {
 					$field->addError('O documento informado já está cadastrado!');
 				}
 			}
@@ -167,7 +168,7 @@ class Psmodcpf extends Module
 	public function hookActionCustomerAccountUpdate($params)
 	{
 		$result = $this->searchCustomer((int)$params['customer']->id);
-		if($result === false){
+		if ($result === false) {
 			$this->insertDocumento($params['customer']->id);
 		}
 	}
@@ -176,9 +177,9 @@ class Psmodcpf extends Module
 	{
 		/** @var FormBuilderInterface $formBuilder */
 		$formBuilder = $params['form_builder'];
-		if($params['route'] === 'admin_customers_edit'){
+		if ($params['route'] === 'admin_customers_edit') {
 			$formBuilder->add('tp_documento', ChoiceType::class, [
-				'choices' => ['CPF' => '1','CNPJ' => '2'],
+				'choices' => ['CPF' => '1', 'CNPJ' => '2'],
 				'multiple' => false,
 				'expanded' => true,
 				'required' => false,
@@ -186,19 +187,19 @@ class Psmodcpf extends Module
 				'label' => 'Tipo de documento',
 				'disabled' => true
 			])
-			->add('documento',TextType::class,[
-				'label' => 'Número',
-				'disabled' => true,
-				'required' => false
-			])
-			->add('rg_ie',TextType::class,[
-				'label' => 'RG',
-				'disabled' => true
-			]);
-	
+				->add('documento', TextType::class, [
+					'label' => 'Número',
+					'disabled' => true,
+					'required' => false
+				])
+				->add('rg_ie', TextType::class, [
+					'label' => 'RG',
+					'disabled' => true
+				]);
+
 			$formData = $params['data'];
 			$formData['tp_documento'] = '1';
-			if(!is_null($this->context->customer)){
+			if (!is_null($this->context->customer)) {
 				$formData = $this->fillFieldsAdmin($params['data']);
 			}
 			$formBuilder->setData($formData);
@@ -248,9 +249,9 @@ class Psmodcpf extends Module
 		$result = $this->searchCustomer($id_customer);
 
 		$extraValues = &$params['fields_value'];
-		$extraValues['tp_documento'] = ( isset($result['tp_documento']) ? $result['tp_documento'] : 1 );
-		$extraValues['documento'] = ( isset($result['documento']) ? $result['documento'] : null );
-		$extraValues['rg_ie'] = ( isset($result['rg_ie']) ? $result['rg_ie'] : null );
+		$extraValues['tp_documento'] = (isset($result['tp_documento']) ? $result['tp_documento'] : 1);
+		$extraValues['documento'] = (isset($result['documento']) ? $result['documento'] : null);
+		$extraValues['rg_ie'] = (isset($result['rg_ie']) ? $result['rg_ie'] : null);
 	}
 
 	public function hookActionAdminCustomersControllerSaveBefore($params)
@@ -258,11 +259,11 @@ class Psmodcpf extends Module
 		$objValidateDoc = new ValidateDocumento();
 		$documento = Tools::getValue('documento');
 		$id_customer = (int)Tools::getValue('id_customer');
-		if(!empty($documento)) {
-			if(!$objValidateDoc->validarDocumento($documento)){
+		if (!empty($documento)) {
+			if (!$objValidateDoc->validarDocumento($documento)) {
 				$params['controller']->errors[] = $this->mensagemError;
 			}
-			if($this->checkDuplicate($documento,$id_customer) !== false){
+			if ($this->checkDuplicate($documento, $id_customer) !== false) {
 				$params['controller']->errors[] = "O documento '{$documento}' já está cadastrado!";
 			}
 		} else {
@@ -274,7 +275,7 @@ class Psmodcpf extends Module
 	{
 		$id_customer = (int)Tools::getValue('id_customer');
 		$result = $this->searchCustomer($id_customer);
-		if($result === false){
+		if ($result === false) {
 			$this->insertDocumento($id_customer);
 		} else {
 			$this->updateDocumento($id_customer);
@@ -288,8 +289,8 @@ class Psmodcpf extends Module
 			->setName('tp_documento')
 			->setType('radio-buttons')
 			->setLabel('Tipo de documento')
-			->addAvailableValue(1,'CPF')
-			->addAvailableValue(2,'CNPJ')
+			->addAvailableValue(1, 'CPF')
+			->addAvailableValue(2, 'CNPJ')
 			->setValue(1);
 		$format[$tipoDocumento->getName()] = $tipoDocumento;
 
@@ -310,7 +311,7 @@ class Psmodcpf extends Module
 			->setType('hidden')
 			->setValue('true');
 
-		if(!is_null($this->context->customer->id)){
+		if (!is_null($this->context->customer->id)) {
 			return $this->fillFieldsFront($format);
 		}
 		return $format;
@@ -326,7 +327,7 @@ class Psmodcpf extends Module
 			"date_add" => date('Y-m-d H:i:s'),
 			"date_upd" => date('Y-m-d H:i:s')
 		];
-		Db::getInstance()->insert('modulo_cpf',$arrData);
+		Db::getInstance()->insert('modulo_cpf', $arrData);
 	}
 
 	private function updateDocumento($id_customer)
@@ -337,13 +338,13 @@ class Psmodcpf extends Module
 			"tp_documento" => (int)Tools::getValue('tp_documento'),
 			"date_upd" => date('Y-m-d H:i:s')
 		];
-		Db::getInstance()->update('modulo_cpf', $arrData, 'id_customer = '.(int)$id_customer );
+		Db::getInstance()->update('modulo_cpf', $arrData, 'id_customer = ' . (int)$id_customer);
 	}
 
 	public function fillFieldsAdmin(array $formData)
 	{
 		$result = $this->searchCustomer((int)$this->context->customer->id);
-		if($result){
+		if ($result) {
 			$formData['tp_documento'] = $result['tp_documento'];
 			$formData['documento'] = $result['documento'];
 			$formData['rg_ie'] = $result['rg_ie'];
@@ -354,7 +355,7 @@ class Psmodcpf extends Module
 	public function fillFieldsFront($format)
 	{
 		$result = $this->searchCustomer((int)$this->context->customer->id);
-		if($result){
+		if ($result) {
 			$format['tp_documento']->setValue($result['tp_documento']);
 			$format['documento']->setValue($result['documento']);
 			$format['rg_ie']->setValue($result['rg_ie']);
@@ -365,7 +366,7 @@ class Psmodcpf extends Module
 
 	private function searchCustomer($id_customer)
 	{
-		if($id_customer == 0){
+		if ($id_customer == 0) {
 			return [];
 		}
 		$db_prefix = _DB_PREFIX_;
@@ -377,11 +378,11 @@ class Psmodcpf extends Module
 	public function validarDocumento($documento)
 	{
 		$objValidateDoc = new ValidateDocumento();
-		if(!$objValidateDoc->validarDocumento($documento)){
+		if (!$objValidateDoc->validarDocumento($documento)) {
 			throw new Exception($this->mensagemError);
 		}
-		$id_customer = ( is_null($this->context->customer->id) ? null : $this->context->customer->id );
-		if($this->checkDuplicate($documento,$id_customer) !== false){
+		$id_customer = (is_null($this->context->customer->id) ? null : $this->context->customer->id);
+		if ($this->checkDuplicate($documento, $id_customer) !== false) {
 			throw new Exception('O documento informado já está cadastrado!');
 		}
 	}
@@ -392,7 +393,7 @@ class Psmodcpf extends Module
 		$db = Db::getInstance();
 		$doc = preg_replace("/[^0-9]/", "", $documento);
 		$sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE `documento` = '{$doc}'";
-		if($id_customer > 0){
+		if ($id_customer > 0) {
 			$sql .= " AND id_customer != {$id_customer}";
 		}
 		$result = $db->getRow($sql);
