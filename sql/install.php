@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS `{$db_prefix}modulo_cpf` (
   `date_upd` datetime NOT NULL,
 	`id_customer` INT(10) UNSIGNED NOT NULL,
 	PRIMARY KEY (`id`),
+	UNIQUE KEY `{$db_prefix}modulo_cpf_UN` (`documento`),
 	INDEX `fk_{$db_prefix}modulo_cpf_{$db_prefix}customer_idx` (`id_customer` ASC),
 	CONSTRAINT `fk_{$db_prefix}modulo_cpf_{$db_prefix}customer`
 		FOREIGN KEY (`id_customer`)
