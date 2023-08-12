@@ -177,7 +177,10 @@ class Psmodcpf extends Module
 	{
 		/** @var FormBuilderInterface $formBuilder */
 		$formBuilder = $params['form_builder'];
-		if ($params['route'] === 'admin_customers_edit') {
+
+		$allowed_routes = ['admin_customers_edit', 'admin_customers_create'];
+
+		if (in_array($params['route'], $allowed_routes)) {
 			$formBuilder->add('tp_documento', ChoiceType::class, [
 				'choices' => ['CPF' => '1', 'CNPJ' => '2'],
 				'multiple' => false,
@@ -185,16 +188,16 @@ class Psmodcpf extends Module
 				'required' => false,
 				'placeholder' => null,
 				'label' => 'Tipo de documento',
-				'disabled' => true
+				'disabled' => false
 			])
 				->add('documento', TextType::class, [
 					'label' => 'Número',
-					'disabled' => true,
+					'disabled' => false,
 					'required' => false
 				])
 				->add('rg_ie', TextType::class, [
 					'label' => 'RG',
-					'disabled' => true
+					'disabled' => false
 				]);
 
 			$formData = $params['data'];
