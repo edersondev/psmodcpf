@@ -1,5 +1,7 @@
 <?php
 
+require_once 'vendor/autoload.php';
+
 /**
  * 2007-2018 PrestaShop
  *
@@ -29,9 +31,8 @@ if (!defined('_PS_VERSION_')) {
 	exit;
 }
 
-include(dirname(__FILE__) . '/classes/ValidateDocumento.php');
+use PsmodCpf\Utils\ValidateDocumento;
 
-use PrestaShop\Module\Psmodcpf\ValidateDocumento;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;

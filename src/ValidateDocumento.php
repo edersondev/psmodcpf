@@ -1,6 +1,6 @@
 <?php
 
-namespace PrestaShop\Module\Psmodcpf;
+namespace PsmodCpf\Utils;
 
 class ValidateDocumento
 {
