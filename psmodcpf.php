@@ -28,7 +28,7 @@ require_once 'vendor/autoload.php';
  */
 
 if (!defined('_PS_VERSION_')) {
-	exit;
+    exit;
 }
 
 use PsmodCpf\Utils\ValidateDocumento;
@@ -39,62 +39,62 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 class Psmodcpf extends Module
 {
-	protected $config_form = false;
+    protected $config_form = false;
 
-	public $mensagemError = 'Número inválido. Verifique por favor!';
+    public $mensagemError = 'Número inválido. Verifique por favor!';
 
-	protected $_listOfHooks = [
-		'actionFrontControllerSetMedia',
-		'actionAdminControllerSetMedia',
-		'validateCustomerFormFields',
-		'actionCustomerAccountAdd',
-		'actionCustomerAccountUpdate',
-		'actionAdminCustomersFormModifier',
-		'actionBeforeCreateCustomerFormHandler',
-		'actionAfterCreateCustomerFormHandler',
-		'actionBeforeUpdateCustomerFormHandler',
-		'actionAfterUpdateCustomerFormHandler',
-		'additionalCustomerFormFields',
-		'actionCustomerFormBuilderModifier'
-	];
+    protected $_listOfHooks = [
+        'actionFrontControllerSetMedia',
+        'actionAdminControllerSetMedia',
+        'validateCustomerFormFields',
+        'actionCustomerAccountAdd',
+        'actionCustomerAccountUpdate',
+        'actionAdminCustomersFormModifier',
+        'actionBeforeCreateCustomerFormHandler',
+        'actionAfterCreateCustomerFormHandler',
+        'actionBeforeUpdateCustomerFormHandler',
+        'actionAfterUpdateCustomerFormHandler',
+        'additionalCustomerFormFields',
+        'actionCustomerFormBuilderModifier'
+    ];
 
-	public function __construct()
-	{
-		$this->name = 'psmodcpf';
-		$this->tab = 'front_office_features';
-		$this->version = '2.0.6';
-		$this->author = 'Ederson Ferreira da Silva';
-		$this->need_instance = 0;
+    public function __construct()
+    {
+        $this->name = 'psmodcpf';
+        $this->tab = 'front_office_features';
+        $this->version = '2.0.6';
+        $this->author = 'Ederson Ferreira da Silva';
+        $this->need_instance = 0;
 
-		/**
-		 * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
-		 */
-		$this->bootstrap = true;
+        /**
+         * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
+         */
+        $this->bootstrap = true;
 
-		parent::__construct();
+        parent::__construct();
 
-		$this->displayName = $this->l('Módulo CPF');
-		$this->description = $this->l('Adiciona o campo CPF / CNPJ no cadastro do cliente');
+        $this->displayName = $this->l('Módulo CPF');
+        $this->description = $this->l('Adiciona o campo CPF / CNPJ no cadastro do cliente');
 
-		$this->confirmUninstall = $this->l('Tem certeza de que deseja desinstalar o módulo CPF?');
+        $this->confirmUninstall = $this->l('Tem certeza de que deseja desinstalar o módulo CPF?');
 
-		$this->ps_versions_compliancy = array('min' => '1.7', 'max' => _PS_VERSION_);
-	}
+        $this->ps_versions_compliancy = array('min' => '1.7', 'max' => _PS_VERSION_);
+    }
 
-	/**
-	 * Don't forget to create update methods if needed:
-	 * http://doc.prestashop.com/display/PS16/Enabling+the+Auto-Update
-	 */
-	public function install()
-	{
-		Configuration::updateValue('PSMODCPF_LIVE_MODE', false);
+    /**
+     * Don't forget to create update methods if needed:
+     * http://doc.prestashop.com/display/PS16/Enabling+the+Auto-Update
+     */
+    public function install()
+    {
+        Configuration::updateValue('PSMODCPF_LIVE_MODE', false);
 
-		include(dirname(__FILE__) . '/sql/install.php');
+        include(dirname(__FILE__) . '/sql/install.php');
 
-		return parent::install() && $this->registerHooks();
-	}
+        return parent::install() && $this->registerHooks();
+    }
 
-	public function registerHooks(): bool
+    public function registerHooks(): bool
     {
         $validHook = true;
 
@@ -107,218 +107,218 @@ class Psmodcpf extends Module
         return $validHook;
     }
 
-	public function uninstall()
-	{
-		Configuration::deleteByName('PSMODCPF_LIVE_MODE');
+    public function uninstall()
+    {
+        Configuration::deleteByName('PSMODCPF_LIVE_MODE');
 
-		include(dirname(__FILE__) . '/sql/uninstall.php');
+        include(dirname(__FILE__) . '/sql/uninstall.php');
 
-		foreach ($this->_listOfHooks as $hook) {
+        foreach ($this->_listOfHooks as $hook) {
             $this->unregisterHook($hook);
         }
 
-		return parent::uninstall();
-	}
+        return parent::uninstall();
+    }
 
-	/**
-	 * Load the configuration form
-	 */
-	public function getContent()
-	{
-		$this->context->smarty->assign('module_dir', $this->_path);
+    /**
+     * Load the configuration form
+     */
+    public function getContent()
+    {
+        $this->context->smarty->assign('module_dir', $this->_path);
 
-		$output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
+        $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
 
-		return $output;
-	}
+        return $output;
+    }
 
-	/**
-	 * Add the CSS & JavaScript files you want to be loaded in the BO.
-	 */
-	public function hookActionAdminControllerSetMedia()
-	{
+    /**
+     * Add the CSS & JavaScript files you want to be loaded in the BO.
+     */
+    public function hookActionAdminControllerSetMedia()
+    {
 
-		if (Tools::getValue('module_name') == $this->name) {
-			$this->context->controller->addCSS($this->_path . 'views/css/back.css');
-		}
+        if (Tools::getValue('module_name') == $this->name) {
+            $this->context->controller->addCSS($this->_path . 'views/css/back.css');
+        }
 
-		if (Tools::getValue('controller') == 'AdminCustomers') {
-			$this->context->controller->addJS($this->_path . 'views/js/jquery.mask.min.js');
-			$this->context->controller->addJS($this->_path . 'views/js/back.js');
-		}
-	}
+        if (Tools::getValue('controller') == 'AdminCustomers') {
+            $this->context->controller->addJS($this->_path . 'views/js/jquery.mask.min.js');
+            $this->context->controller->addJS($this->_path . 'views/js/back.js');
+        }
+    }
 
-	/**
-	 * Add the CSS & JavaScript files you want to be added on the FO.
-	 */
-	public function hookActionFrontControllerSetMedia()
-	{
-		if (Tools::getValue('controller') == 'order' || Tools::getValue('controller') == 'identity' || (Tools::getValue('controller') == 'authentication' && Tools::getValue('create_account') == '1')) {
-			$this->context->controller->registerJavascript(
-				'module-psmodcpf-jquerymask',
-				'modules/' . $this->name . '/views/js/jquery.mask.min.js',
-				['priority' => 210]
-			);
-			$this->context->controller->registerJavascript(
-				'module-psmodcpf-front',
-				'modules/' . $this->name . '/views/js/front.js',
-				['priority' => 211]
-			);
-		}
-	}
+    /**
+     * Add the CSS & JavaScript files you want to be added on the FO.
+     */
+    public function hookActionFrontControllerSetMedia()
+    {
+        if (Tools::getValue('controller') == 'order' || Tools::getValue('controller') == 'identity' || (Tools::getValue('controller') == 'authentication' && Tools::getValue('create_account') == '1')) {
+            $this->context->controller->registerJavascript(
+                'module-psmodcpf-jquerymask',
+                'modules/' . $this->name . '/views/js/jquery.mask.min.js',
+                ['priority' => 210]
+            );
+            $this->context->controller->registerJavascript(
+                'module-psmodcpf-front',
+                'modules/' . $this->name . '/views/js/front.js',
+                ['priority' => 211]
+            );
+        }
+    }
 
-	public function hookValidateCustomerFormFields($params)
-	{
-		foreach ($params['fields'] as $field) {
-			if ($field->getName() == 'documento') {
-				$objValidateDoc = new ValidateDocumento();
-				if (!$objValidateDoc->validarDocumento($field->getValue())) {
-					$field->addError($this->mensagemError);
-				}
-				$id_customer = (is_null($this->context->customer->id) ? 0 : (int)$this->context->customer->id);
-				if ($this->checkDuplicate($field->getValue(), $id_customer) !== false) {
-					$field->addError('O documento informado já está cadastrado!');
-				}
-			}
-		}
-	}
+    public function hookValidateCustomerFormFields($params)
+    {
+        foreach ($params['fields'] as $field) {
+            if ($field->getName() == 'documento') {
+                $objValidateDoc = new ValidateDocumento();
+                if (!$objValidateDoc->validarDocumento($field->getValue())) {
+                    $field->addError($this->mensagemError);
+                }
+                $id_customer = (is_null($this->context->customer->id) ? 0 : (int)$this->context->customer->id);
+                if ($this->checkDuplicate($field->getValue(), $id_customer) !== false) {
+                    $field->addError('O documento informado já está cadastrado!');
+                }
+            }
+        }
+    }
 
-	public function hookActionCustomerAccountAdd($params)
-	{
-		$form_data = [
+    public function hookActionCustomerAccountAdd($params)
+    {
+        $form_data = [
             'documento' => Tools::getValue('documento'),
             'rg_ie' => Tools::getValue('rg_ie'),
             'tp_documento' => Tools::getValue('tp_documento')
         ];
-		$this->insertDocumento($params['newCustomer']->id, $form_data);
-	}
+        $this->insertDocumento($params['newCustomer']->id, $form_data);
+    }
 
-	public function hookActionCustomerAccountUpdate($params)
-	{
-		$form_data = [
+    public function hookActionCustomerAccountUpdate($params)
+    {
+        $form_data = [
             'documento' => Tools::getValue('documento'),
             'rg_ie' => Tools::getValue('rg_ie'),
             'tp_documento' => Tools::getValue('tp_documento')
         ];
 
-		$result = $this->searchCustomer((int)$params['customer']->id);
-		if ($result === false) {
-			$this->insertDocumento($params['customer']->id, $form_data);
-		}
-	}
+        $result = $this->searchCustomer((int)$params['customer']->id);
+        if ($result === false) {
+            $this->insertDocumento($params['customer']->id, $form_data);
+        }
+    }
 
-	public function hookActionCustomerFormBuilderModifier($params)
-	{
-		/** @var FormBuilderInterface $formBuilder */
-		$formBuilder = $params['form_builder'];
+    public function hookActionCustomerFormBuilderModifier($params)
+    {
+        /** @var FormBuilderInterface $formBuilder */
+        $formBuilder = $params['form_builder'];
 
-		$allowed_routes = ['admin_customers_edit', 'admin_customers_create'];
+        $allowed_routes = ['admin_customers_edit', 'admin_customers_create'];
 
-		if (in_array($params['route'], $allowed_routes)) {
-			$formBuilder->add('tp_documento', ChoiceType::class, [
-				'choices' => ['CPF' => '1', 'CNPJ' => '2'],
-				'multiple' => false,
-				'expanded' => true,
-				'required' => false,
-				'placeholder' => null,
-				'label' => 'Tipo de documento',
-				'disabled' => false
-			])
-				->add('documento', TextType::class, [
-					'label' => 'Número',
-					'disabled' => false,
-					'required' => false
-				])
-				->add('rg_ie', TextType::class, [
-					'label' => 'RG',
-					'disabled' => false
-				]);
+        if (in_array($params['route'], $allowed_routes)) {
+            $formBuilder->add('tp_documento', ChoiceType::class, [
+                'choices' => ['CPF' => '1', 'CNPJ' => '2'],
+                'multiple' => false,
+                'expanded' => true,
+                'required' => false,
+                'placeholder' => null,
+                'label' => 'Tipo de documento',
+                'disabled' => false
+            ])
+                ->add('documento', TextType::class, [
+                    'label' => 'Número',
+                    'disabled' => false,
+                    'required' => false
+                ])
+                ->add('rg_ie', TextType::class, [
+                    'label' => 'RG',
+                    'disabled' => false
+                ]);
 
-			$formData = $params['data'];
-			$formData['tp_documento'] = '1';
-			if (!is_null($this->context->customer)) {
-				$formData = $this->fillFieldsAdmin($params['data']);
-			}
-			$formBuilder->setData($formData);
-		}
-	}
+            $formData = $params['data'];
+            $formData['tp_documento'] = '1';
+            if (!is_null($this->context->customer)) {
+                $formData = $this->fillFieldsAdmin($params['data']);
+            }
+            $formBuilder->setData($formData);
+        }
+    }
 
-	public function hookActionAdminCustomersFormModifier($params)
-	{
-		$extraInputs = &$params['fields'][0]['form']['input'];
-		$extraInputs[] = [
-			'type' => 'radio',
-			'label' => 'Tipo de documento',
-			'name' => 'tp_documento',
-			'required' => true,
-			'class' => 't',
-			'values' => [
-				[
-					'id' => 'documento_1',
-					'value' => 1,
-					'label' => 'CPF'
-				],
-				[
-					'id' => 'documento_2',
-					'value' => 2,
-					'label' => 'CNPJ'
-				]
-			]
-		];
+    public function hookActionAdminCustomersFormModifier($params)
+    {
+        $extraInputs = &$params['fields'][0]['form']['input'];
+        $extraInputs[] = [
+            'type' => 'radio',
+            'label' => 'Tipo de documento',
+            'name' => 'tp_documento',
+            'required' => true,
+            'class' => 't',
+            'values' => [
+                [
+                    'id' => 'documento_1',
+                    'value' => 1,
+                    'label' => 'CPF'
+                ],
+                [
+                    'id' => 'documento_2',
+                    'value' => 2,
+                    'label' => 'CNPJ'
+                ]
+            ]
+        ];
 
-		$extraInputs[] = [
-			'type' => 'text',
-			'label' => 'Número',
-			'name' => 'documento',
-			'required' => true,
-			'col' => '2'
-		];
+        $extraInputs[] = [
+            'type' => 'text',
+            'label' => 'Número',
+            'name' => 'documento',
+            'required' => true,
+            'col' => '2'
+        ];
 
-		$extraInputs[] = [
-			'type' => 'text',
-			'label' => 'RG',
-			'name' => 'rg_ie',
-			'required' => false,
-			'col' => '2'
-		];
+        $extraInputs[] = [
+            'type' => 'text',
+            'label' => 'RG',
+            'name' => 'rg_ie',
+            'required' => false,
+            'col' => '2'
+        ];
 
-		$id_customer = (int)$params['object']->id;
-		$result = $this->searchCustomer($id_customer);
+        $id_customer = (int)$params['object']->id;
+        $result = $this->searchCustomer($id_customer);
 
-		$extraValues = &$params['fields_value'];
-		$extraValues['tp_documento'] = (isset($result['tp_documento']) ? $result['tp_documento'] : 1);
-		$extraValues['documento'] = (isset($result['documento']) ? $result['documento'] : null);
-		$extraValues['rg_ie'] = (isset($result['rg_ie']) ? $result['rg_ie'] : null);
-	}
+        $extraValues = &$params['fields_value'];
+        $extraValues['tp_documento'] = (isset($result['tp_documento']) ? $result['tp_documento'] : 1);
+        $extraValues['documento'] = (isset($result['documento']) ? $result['documento'] : null);
+        $extraValues['rg_ie'] = (isset($result['rg_ie']) ? $result['rg_ie'] : null);
+    }
 
-	public function hookActionBeforeCreateCustomerFormHandler($params)
-	{
-		$this->adminValidarDocumento($params['form_data']['documento']);
-	}
+    public function hookActionBeforeCreateCustomerFormHandler($params)
+    {
+        $this->adminValidarDocumento($params['form_data']['documento']);
+    }
 
-	public function hookActionAfterCreateCustomerFormHandler($params)
-	{
-		$id_customer = (int)$params['id'];
+    public function hookActionAfterCreateCustomerFormHandler($params)
+    {
+        $id_customer = (int)$params['id'];
         $this->insertDocumento($id_customer, $params['form_data']);
-	}
+    }
 
-	public function hookActionBeforeUpdateCustomerFormHandler($params)
-	{
-		$this->adminValidarDocumento($params['form_data']['documento'], (int)$params['id']);
-	}
+    public function hookActionBeforeUpdateCustomerFormHandler($params)
+    {
+        $this->adminValidarDocumento($params['form_data']['documento'], (int)$params['id']);
+    }
 
-	public function hookActionAfterUpdateCustomerFormHandler($params)
-	{
-		$id_customer = (int)Tools::getValue('id_customer');
-		$result = $this->searchCustomer($id_customer);
-		if ($result === false) {
-			$this->insertDocumento($id_customer, $params['form_data']);
-		} else {
-			$this->updateDocumento($id_customer, $params['form_data']);
-		}
-	}
+    public function hookActionAfterUpdateCustomerFormHandler($params)
+    {
+        $id_customer = (int)Tools::getValue('id_customer');
+        $result = $this->searchCustomer($id_customer);
+        if ($result === false) {
+            $this->insertDocumento($id_customer, $params['form_data']);
+        } else {
+            $this->updateDocumento($id_customer, $params['form_data']);
+        }
+    }
 
-	public function adminValidarDocumento($documento, $id = null): void
+    public function adminValidarDocumento($documento, $id = null): void
     {
         $objValidateDoc = new ValidateDocumento();
         if (!empty($documento)) {
@@ -334,54 +334,54 @@ class Psmodcpf extends Module
         }
     }
 
-	public function hookAdditionalCustomerFormFields($params)
-	{
-		$format = [];
-		$tipoDocumento = (new FormField)
-			->setName('tp_documento')
-			->setType('radio-buttons')
-			->setLabel('Tipo de documento')
-			->addAvailableValue(1, 'CPF')
-			->addAvailableValue(2, 'CNPJ')
-			->setValue(1);
-		$format[$tipoDocumento->getName()] = $tipoDocumento;
+    public function hookAdditionalCustomerFormFields($params)
+    {
+        $format = [];
+        $tipoDocumento = (new FormField)
+            ->setName('tp_documento')
+            ->setType('radio-buttons')
+            ->setLabel('Tipo de documento')
+            ->addAvailableValue(1, 'CPF')
+            ->addAvailableValue(2, 'CNPJ')
+            ->setValue(1);
+        $format[$tipoDocumento->getName()] = $tipoDocumento;
 
-		$format['documento'] = (new FormField)
-			->setName('documento')
-			->setType('text')
-			->setLabel('Número')
-			->setRequired(true);
+        $format['documento'] = (new FormField)
+            ->setName('documento')
+            ->setType('text')
+            ->setLabel('Número')
+            ->setRequired(true);
 
-		$format['rg_ie'] = (new FormField)
-			->setName('rg_ie')
-			->setType('text')
-			->setLabel('RG')
-			->setMaxLength(45);
+        $format['rg_ie'] = (new FormField)
+            ->setName('rg_ie')
+            ->setType('text')
+            ->setLabel('RG')
+            ->setMaxLength(45);
 
-		$format['add_documento'] = (new FormField)
-			->setName('add_documento')
-			->setType('hidden')
-			->setValue('true');
+        $format['add_documento'] = (new FormField)
+            ->setName('add_documento')
+            ->setType('hidden')
+            ->setValue('true');
 
-		if (!is_null($this->context->customer->id)) {
-			return $this->fillFieldsFront($format);
-		}
-		return $format;
-	}
+        if (!is_null($this->context->customer->id)) {
+            return $this->fillFieldsFront($format);
+        }
+        return $format;
+    }
 
-	private function insertDocumento($id_customer, $form_data)
-	{
-		$arrData = $this->getDataToDb($form_data, $id_customer, true);
-		Db::getInstance()->insert('modulo_cpf', $arrData);
-	}
+    private function insertDocumento($id_customer, $form_data)
+    {
+        $arrData = $this->getDataToDb($form_data, $id_customer, true);
+        Db::getInstance()->insert('modulo_cpf', $arrData);
+    }
 
-	private function updateDocumento($id_customer, $form_data)
-	{
-		$arrData = $this->getDataToDb($form_data, $id_customer);
-		Db::getInstance()->update('modulo_cpf', $arrData, 'id_customer = ' . (int)$id_customer);
-	}
+    private function updateDocumento($id_customer, $form_data)
+    {
+        $arrData = $this->getDataToDb($form_data, $id_customer);
+        Db::getInstance()->update('modulo_cpf', $arrData, 'id_customer = ' . (int)$id_customer);
+    }
 
-	public function getDataToDb($form_data, $id_customer, $new_register = false): array
+    public function getDataToDb($form_data, $id_customer, $new_register = false): array
     {
         $dbDate = date('Y-m-d H:i:s');
         $arrData = [
@@ -399,70 +399,70 @@ class Psmodcpf extends Module
         return $arrData;
     }
 
-	public function formatarDocumento($documento): string
+    public function formatarDocumento($documento): string
     {
         return preg_replace("/[\D]/", "", $documento);
     }
 
-	public function fillFieldsAdmin(array $formData)
-	{
-		$result = $this->searchCustomer((int)$this->context->customer->id);
-		if ($result) {
-			$formData['tp_documento'] = $result['tp_documento'];
-			$formData['documento'] = $result['documento'];
-			$formData['rg_ie'] = $result['rg_ie'];
-		}
-		return $formData;
-	}
+    public function fillFieldsAdmin(array $formData)
+    {
+        $result = $this->searchCustomer((int)$this->context->customer->id);
+        if ($result) {
+            $formData['tp_documento'] = $result['tp_documento'];
+            $formData['documento'] = $result['documento'];
+            $formData['rg_ie'] = $result['rg_ie'];
+        }
+        return $formData;
+    }
 
-	public function fillFieldsFront($format)
-	{
-		$result = $this->searchCustomer((int)$this->context->customer->id);
-		if ($result) {
-			$format['tp_documento']->setValue($result['tp_documento']);
-			$format['documento']->setValue($result['documento']);
-			$format['rg_ie']->setValue($result['rg_ie']);
-			$format['add_documento']->setValue('false');
-		}
-		return $format;
-	}
+    public function fillFieldsFront($format)
+    {
+        $result = $this->searchCustomer((int)$this->context->customer->id);
+        if ($result) {
+            $format['tp_documento']->setValue($result['tp_documento']);
+            $format['documento']->setValue($result['documento']);
+            $format['rg_ie']->setValue($result['rg_ie']);
+            $format['add_documento']->setValue('false');
+        }
+        return $format;
+    }
 
-	private function searchCustomer($id_customer)
-	{
-		if ($id_customer == 0) {
-			return [];
-		}
-		$db_prefix = _DB_PREFIX_;
-		$db = Db::getInstance();
-		$sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE id_customer = {$id_customer}";
-		return $db->getRow($sql);
-	}
+    private function searchCustomer($id_customer)
+    {
+        if ($id_customer == 0) {
+            return [];
+        }
+        $db_prefix = _DB_PREFIX_;
+        $db = Db::getInstance();
+        $sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE id_customer = {$id_customer}";
+        return $db->getRow($sql);
+    }
 
-	public function validarDocumento($documento)
-	{
-		$objValidateDoc = new ValidateDocumento();
-		if (!$objValidateDoc->validarDocumento($documento)) {
-			throw new Exception($this->mensagemError);
-		}
-		$id_customer = (is_null($this->context->customer->id) ? null : $this->context->customer->id);
-		if ($this->checkDuplicate($documento, $id_customer) !== false) {
-			throw new Exception('O documento informado já está cadastrado!');
-		}
-	}
+    public function validarDocumento($documento)
+    {
+        $objValidateDoc = new ValidateDocumento();
+        if (!$objValidateDoc->validarDocumento($documento)) {
+            throw new Exception($this->mensagemError);
+        }
+        $id_customer = (is_null($this->context->customer->id) ? null : $this->context->customer->id);
+        if ($this->checkDuplicate($documento, $id_customer) !== false) {
+            throw new Exception('O documento informado já está cadastrado!');
+        }
+    }
 
-	public function checkDuplicate($documento, $id_customer = null)
-	{
-		$db_prefix = _DB_PREFIX_;
-		$db = Db::getInstance();
-		$doc = $this->formatarDocumento($documento);
-		$sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE `documento` = '{$doc}'";
-		if (!is_null($id_customer)) {
-			$sql .= " AND id_customer != {$id_customer}";
-		}
-		return $db->getRow($sql);
-	}
+    public function checkDuplicate($documento, $id_customer = null)
+    {
+        $db_prefix = _DB_PREFIX_;
+        $db = Db::getInstance();
+        $doc = $this->formatarDocumento($documento);
+        $sql = "SELECT * FROM `{$db_prefix}modulo_cpf` WHERE `documento` = '{$doc}'";
+        if (!is_null($id_customer)) {
+            $sql .= " AND id_customer != {$id_customer}";
+        }
+        return $db->getRow($sql);
+    }
 
-	/**
+    /**
      * Forma alternativa de lidar com mensagens de erro do Form
      */
     public function showErrorValidateForm($messagem): void
