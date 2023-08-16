@@ -24,32 +24,3 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-$sql = array();
-
-$db_prefix = _DB_PREFIX_;
-$db_engine = _MYSQL_ENGINE_;
-$sql[] = <<<EOF
-CREATE TABLE IF NOT EXISTS `{$db_prefix}modulo_cpf` (
-	`id` INT NOT NULL AUTO_INCREMENT,
-	`documento` VARCHAR(20) NULL,
-	`rg_ie` VARCHAR(45) NULL,
-	`tp_documento` TINYINT NULL,
-	`date_add` datetime NOT NULL,
-  `date_upd` datetime NOT NULL,
-	`id_customer` INT(10) UNSIGNED NOT NULL,
-	PRIMARY KEY (`id`),
-	UNIQUE KEY `{$db_prefix}modulo_cpf_UN` (`documento`),
-	INDEX `fk_{$db_prefix}modulo_cpf_{$db_prefix}customer_idx` (`id_customer` ASC),
-	CONSTRAINT `fk_{$db_prefix}modulo_cpf_{$db_prefix}customer`
-		FOREIGN KEY (`id_customer`)
-		REFERENCES `{$db_prefix}customer` (`id_customer`)
-		ON DELETE CASCADE
-		ON UPDATE NO ACTION)
-ENGINE={$db_engine} DEFAULT CHARSET=utf8;
-EOF;
-
-foreach ($sql as $query) {
-	if (Db::getInstance()->execute($query) == false) {
-		return false;
-	}
-}
