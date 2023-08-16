@@ -6,5 +6,5 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Root\\Psmodcpf\\' => array($baseDir . '/src'),
+    'PsmodCpf\\Utils\\' => array($baseDir . '/src'),
 );

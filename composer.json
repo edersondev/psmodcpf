@@ -1,15 +1,7 @@
 {
-    "name": "root/psmodcpf",
     "autoload": {
         "psr-4": {
-            "Root\\Psmodcpf\\": "src/"
+            "PsmodCpf\\Utils\\": "src"
         }
-    },
-    "authors": [
-        {
-            "name": "Ederson Ferreira",
-            "email": "ederson.dev@gmail.com"
-        }
-    ],
-    "require": {}
+    }
 }
