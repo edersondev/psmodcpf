@@ -1,7 +1,5 @@
 <?php
 
-require_once 'vendor/autoload.php';
-
 /**
  * 2007-2018 PrestaShop
  *
@@ -29,6 +27,11 @@ require_once 'vendor/autoload.php';
 
 if (!defined('_PS_VERSION_')) {
     exit;
+}
+
+$autoloadPath = __DIR__ . '/vendor/autoload.php';
+if (file_exists($autoloadPath)) {
+    require_once $autoloadPath;
 }
 
 use PsmodCpf\Utils\ValidateDocumento;
@@ -152,9 +155,7 @@ SQL;
     {
         $this->context->smarty->assign('module_dir', $this->_path);
 
-        $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
-
-        return $output;
+        return $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
     }
 
     public function hookValidateCustomerFormFields($params)
