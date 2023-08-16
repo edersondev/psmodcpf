@@ -33,10 +33,11 @@ if (!defined('_PS_VERSION_')) {
 
 use PsmodCpf\Utils\ValidateDocumento;
 use PsmodCpf\Utils\PsmodCpfAdmin;
+use PsmodCpf\Utils\PsmodCpfFront;
 
 class Psmodcpf extends Module
 {
-    use PsmodCpfAdmin;
+    use PsmodCpfAdmin, PsmodCpfFront;
 
     protected $config_form = false;
 
@@ -131,25 +132,6 @@ class Psmodcpf extends Module
         return $output;
     }
 
-    /**
-     * Add the CSS & JavaScript files you want to be added on the FO.
-     */
-    public function hookActionFrontControllerSetMedia()
-    {
-        if (Tools::getValue('controller') == 'order' || Tools::getValue('controller') == 'identity' || (Tools::getValue('controller') == 'authentication' && Tools::getValue('create_account') == '1')) {
-            $this->context->controller->registerJavascript(
-                'module-psmodcpf-jquerymask',
-                'modules/' . $this->name . '/views/js/jquery.mask.min.js',
-                ['priority' => 210]
-            );
-            $this->context->controller->registerJavascript(
-                'module-psmodcpf-front',
-                'modules/' . $this->name . '/views/js/front.js',
-                ['priority' => 211]
-            );
-        }
-    }
-
     public function hookValidateCustomerFormFields($params)
     {
         foreach ($params['fields'] as $field) {
@@ -207,41 +189,6 @@ class Psmodcpf extends Module
         }
     }
 
-    public function hookAdditionalCustomerFormFields($params)
-    {
-        $format = [];
-        $tipoDocumento = (new FormField)
-            ->setName('tp_documento')
-            ->setType('radio-buttons')
-            ->setLabel('Tipo de documento')
-            ->addAvailableValue(1, 'CPF')
-            ->addAvailableValue(2, 'CNPJ')
-            ->setValue(1);
-        $format[$tipoDocumento->getName()] = $tipoDocumento;
-
-        $format['documento'] = (new FormField)
-            ->setName('documento')
-            ->setType('text')
-            ->setLabel('Número')
-            ->setRequired(true);
-
-        $format['rg_ie'] = (new FormField)
-            ->setName('rg_ie')
-            ->setType('text')
-            ->setLabel('RG')
-            ->setMaxLength(45);
-
-        $format['add_documento'] = (new FormField)
-            ->setName('add_documento')
-            ->setType('hidden')
-            ->setValue('true');
-
-        if (!is_null($this->context->customer->id)) {
-            return $this->fillFieldsFront($format);
-        }
-        return $format;
-    }
-
     private function insertDocumento($id_customer, $form_data)
     {
         $arrData = $this->getDataToDb($form_data, $id_customer, true);
@@ -277,18 +224,6 @@ class Psmodcpf extends Module
         return preg_replace("/[\D]/", "", $documento);
     }
 
-    public function fillFieldsFront($format)
-    {
-        $result = $this->searchCustomer((int)$this->context->customer->id);
-        if ($result) {
-            $format['tp_documento']->setValue($result['tp_documento']);
-            $format['documento']->setValue($result['documento']);
-            $format['rg_ie']->setValue($result['rg_ie']);
-            $format['add_documento']->setValue('false');
-        }
-        return $format;
-    }
-
     private function searchCustomer($id_customer)
     {
         if ($id_customer == 0) {
@@ -322,18 +257,5 @@ class Psmodcpf extends Module
             $sql .= " AND id_customer != {$id_customer}";
         }
         return $db->getRow($sql);
-    }
-
-    /**
-     * Forma alternativa de lidar com mensagens de erro do Form
-     */
-    public function showErrorValidateForm($messagem): void
-    {
-        exit("
-            <script>
-                alert(\"{$messagem}\");
-                history.back();
-            </script>
-        ");
     }
 }
