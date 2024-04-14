@@ -9,7 +9,7 @@ Este módulo adiciona os campos CPF/CNPJ e RG/Inscrição estadual no cadastro d
 
 ### Instalação
 Efetue o download do módulo:
-[Link para download do módulo cpf](https://github.com/edersondev/psmodcpf/releases/download/v2.1.1/psmodcpf-2.1.1.zip)
+[Link para download do módulo cpf](https://github.com/edersondev/psmodcpf/releases/download/v2.1.2/psmodcpf-2.1.2.zip)
 
 ### Para o Prestashop 1.7.x utilize o link abaixo
 [Link para download do módulo cpf](https://github.com/edersondev/psmodcpf/releases/download/v2.1.0/psmodcpf-2.1.0.zip)
