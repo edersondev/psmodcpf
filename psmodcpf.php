@@ -63,7 +63,7 @@ class Psmodcpf extends Module
     {
         $this->name = 'psmodcpf';
         $this->tab = 'front_office_features';
-        $this->version = '2.1.1';
+        $this->version = '2.1.2';
         $this->author = 'Ederson Ferreira da Silva';
         $this->need_instance = 0;
 
@@ -189,7 +189,10 @@ SQL;
         return $arrData;
     }
 
-    public function searchCustomer($id_customer): array|bool|object|null
+    /**
+     * @return mixed
+     */
+    public function searchCustomer($id_customer)
     {
         if ($id_customer == 0) {
             return [];
@@ -200,7 +203,10 @@ SQL;
         return $db->getRow($sql);
     }
 
-    public function checkDuplicate($documento, $id_customer = null): array|bool|object|null
+    /**
+     * @return mixed
+     */
+    public function checkDuplicate($documento, $id_customer = null)
     {
         $db_prefix = _DB_PREFIX_;
         $db = Db::getInstance();
